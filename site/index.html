@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>户外徒步路线推荐与路书分享平台 · 整合优化方案</title>
+<meta name="description" content="基于 Python 的户外徒步路线推荐与路书分享平台——既有项目整合与优化方案，含匹配度分析、冲突裁决、功能范围、模块划分与数据库设计。">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:#f5f6f4;color:#1c1c1a;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+  font-size:15px;line-height:1.85;-webkit-font-smoothing:antialiased}
+#prog{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,#2f6b4f,#7ba05b);z-index:99}
+
+/* 布局 */
+.wrap{display:flex;max-width:1280px;margin:0 auto;align-items:flex-start}
+aside{position:sticky;top:0;height:100vh;width:280px;flex:0 0 280px;overflow-y:auto;
+  padding:26px 14px 60px 18px;font-size:13px;border-right:1px solid #e3e4df;background:#fbfbf9}
+aside::-webkit-scrollbar{width:5px}
+aside::-webkit-scrollbar-thumb{background:#d3d5cd;border-radius:3px}
+.nav-head{font-size:11px;letter-spacing:.14em;color:#8a8d83;text-transform:uppercase;margin:0 0 12px 8px}
+aside a{display:block;text-decoration:none;color:#4a4d45;padding:4px 8px;border-radius:5px;line-height:1.5}
+aside a:hover{background:#eceee8;color:#1c1c1a}
+.nav-chap{font-weight:700;margin-top:9px;color:#1c1c1a}
+.nav-sec{padding-left:20px!important;font-size:12.5px;color:#6b6f64}
+.nav-sec.active{background:#e6efe6;color:#2f6b4f;font-weight:600}
+
+main{flex:1;min-width:0;padding:40px 56px 120px;background:#fff;
+  box-shadow:0 0 0 1px #e3e4df}
+/* 页头 */
+.doc-title{font-size:31px;line-height:1.4;margin:0 0 6px;letter-spacing:.5px;font-weight:800;color:#14261c}
+.doc-sub{font-size:15px;color:#7a7d73;margin:0 0 22px;font-weight:400}
+.stats{display:flex;gap:26px;padding:16px 20px;background:#f7f8f4;border-radius:10px;margin:0 0 34px;
+  border:1px solid #eceee6;flex-wrap:wrap}
+.stats div{font-size:12.5px;color:#7a7d73}
+.stats b{display:block;font-size:19px;color:#2f6b4f;font-weight:700;letter-spacing:.3px}
+
+/* 标题层级 */
+.h1{font-size:22px;font-weight:800;color:#14261c;margin:52px 0 18px;padding:0 0 12px;
+  border-bottom:2px solid #14261c;letter-spacing:.4px;scroll-margin-top:20px;
+  display:flex;align-items:baseline;gap:12px}
+.h1 .chap-no{font-size:12px;font-weight:700;color:#fff;background:#2f6b4f;
+  padding:2px 7px;border-radius:4px;letter-spacing:.06em;flex:0 0 auto;position:relative;top:-3px}
+.h2{font-size:17px;font-weight:700;color:#20402e;margin:32px 0 10px;scroll-margin-top:16px;
+  padding-left:11px;border-left:4px solid #7ba05b}
+.h3{font-size:15px;font-weight:700;color:#33362f;margin:22px 0 8px}
+
+/* 正文 */
+.para{margin:0 0 12px;text-indent:2em;text-align:justify;color:#26281f}
+.note{margin:8px 0 14px;font-size:13.5px;color:#5c6055;text-align:justify}
+.center{margin:14px 0;text-align:center;font-size:13.5px;color:#6b6f64}
+.bullet{margin:6px 0 6px 1.2em;padding-left:16px;position:relative;color:#31342c}
+.bullet::before{content:"●";position:absolute;left:0;top:0;color:#7ba05b;font-size:9px;line-height:2.9}
+
+.caption{margin:22px 0 7px;font-size:12.5px;font-weight:700;color:#2f6b4f;text-align:center;
+  letter-spacing:.02em;scroll-margin-top:16px}
+
+/* 表格 */
+.table-wrap{overflow-x:auto;margin:0 0 20px;border:1px solid #e1e3dc;border-radius:8px;background:#fff}
+table{border-collapse:collapse;width:100%;font-size:12.8px;line-height:1.65;table-layout:fixed}
+thead th{background:#eef2e8;color:#22331f;font-weight:700;text-align:left;
+  padding:9px 10px;border-bottom:1.5px solid #cdd6c2;border-right:1px solid #e1e3dc;
+  vertical-align:middle;font-size:12.5px}
+tbody td{padding:8px 10px;border-bottom:1px solid #eef0ea;border-right:1px solid #f2f4ee;
+  vertical-align:top;word-break:break-word}
+tbody tr:nth-child(even){background:#fafbf7}
+tbody tr:hover{background:#f3f7ee}
+tbody tr:last-child td{border-bottom:none}
+
+/* 代码 */
+pre.code{background:#f7f8f4;border:1px solid #e3e5dd;border-left:3px solid #7ba05b;
+  border-radius:6px;padding:14px 16px;margin:0 0 20px;overflow-x:auto;
+  font-family:"Cascadia Mono",Consolas,"Courier New",monospace;font-size:12.5px;
+  line-height:1.7;color:#24291f;white-space:pre;tab-size:4}
+pre.code code{font-family:inherit}
+
+/* 封面元信息 */
+.meta-card{border:1px solid #dfe2d8;border-radius:10px;overflow:hidden;margin:0 0 34px;background:#fff}
+.meta-row{display:flex;border-bottom:1px solid #eef0ea}
+.meta-row:last-child{border-bottom:none}
+.meta-row dt{flex:0 0 108px;background:#f5f7f1;padding:11px 14px;font-size:13px;font-weight:700;
+  color:#3c4a34;letter-spacing:.3em;margin:0;text-align:center;display:flex;align-items:center;justify-content:center}
+.meta-row dd{flex:1;margin:0;padding:11px 16px;font-size:13.5px;color:#26281f}
+
+/* 回到顶部 */
+#top{position:fixed;right:26px;bottom:26px;width:40px;height:40px;border-radius:50%;
+  background:#2f6b4f;color:#fff;border:none;cursor:pointer;font-size:16px;display:none;
+  box-shadow:0 3px 12px rgba(0,0,0,.18)}
+#top.show{display:block}
+
+/* 响应式 */
+@media (max-width:1040px){
+  aside{display:none}
+  main{padding:26px 20px 80px}
+  .doc-title{font-size:23px}
+  .table-wrap{font-size:11.5px}
+  table{font-size:11.5px}
+  .meta-row dt{flex:0 0 78px;letter-spacing:.1em;font-size:12px}
+}
+@media print{
+  aside,#prog,#top{display:none}
+  body{background:#fff}
+  main{padding:0;box-shadow:none}
+  .h1{page-break-after:avoid}
+  .table-wrap,pre.code{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div id="prog"></div>
+<div class="wrap">
+<aside>
+  <p class="nav-head">方案目录</p>
+  <a class="nav-chap" href="#chap-1">一、核心结论</a>
+  <a class="nav-chap" href="#chap-2">二、现状核查</a>
+  <a class="nav-sec" href="#sec-2-1" data-chap="2">（一）两个仓库的比对结果</a>
+  <a class="nav-sec" href="#sec-2-2" data-chap="2">（二）现有项目的真实能力边界</a>
+  <a class="nav-sec" href="#sec-2-3" data-chap="2">（三）数据资产的可用性核查</a>
+  <a class="nav-sec" href="#sec-2-4" data-chap="2">（四）原方案文档的定位偏差</a>
+  <a class="nav-chap" href="#chap-3">三、匹配度逐项分析</a>
+  <a class="nav-sec" href="#sec-3-1" data-chap="3">（一）与任务书八项任务的匹配</a>
+  <a class="nav-sec" href="#sec-3-2" data-chap="3">（二）与技术约束的匹配</a>
+  <a class="nav-sec" href="#sec-3-3" data-chap="3">（三）与说明书模板的匹配</a>
+  <a class="nav-sec" href="#sec-3-4" data-chap="3">（四）匹配度汇总</a>
+  <a class="nav-chap" href="#chap-4">四、冲突与冗余清单</a>
+  <a class="nav-sec" href="#sec-4-1" data-chap="4">（一）硬冲突：不改则不成立</a>
+  <a class="nav-sec" href="#sec-4-2" data-chap="4">（二）冗余：建议删除或降级</a>
+  <a class="nav-sec" href="#sec-4-3" data-chap="4">（三）必须在任务书定稿前改掉的一处</a>
+  <a class="nav-chap" href="#chap-5">五、技术方案裁决</a>
+  <a class="nav-sec" href="#sec-5-1" data-chap="5">（一）三条路线的对比</a>
+  <a class="nav-sec" href="#sec-5-2" data-chap="5">（二）选定方案与四条理由</a>
+  <a class="nav-sec" href="#sec-5-3" data-chap="5">（三）四层架构的落点</a>
+  <a class="nav-chap" href="#chap-6">六、功能范围优化</a>
+  <a class="nav-sec" href="#sec-6-1" data-chap="6">（一）三层功能边界</a>
+  <a class="nav-sec" href="#sec-6-2" data-chap="6">（二）必做功能的验收标准</a>
+  <a class="nav-chap" href="#chap-7">七、业务流程设计</a>
+  <a class="nav-sec" href="#sec-7-1" data-chap="7">（一）角色与权限</a>
+  <a class="nav-sec" href="#sec-7-2" data-chap="7">（二）四条主流程</a>
+  <a class="nav-chap" href="#chap-8">八、模块划分与代码复用</a>
+  <a class="nav-sec" href="#sec-8-1" data-chap="8">（一）目录结构</a>
+  <a class="nav-sec" href="#sec-8-2" data-chap="8">（二）模块职责</a>
+  <a class="nav-sec" href="#sec-8-3" data-chap="8">（三）代码复用映射</a>
+  <a class="nav-sec" href="#sec-8-4" data-chap="8">（四）删除清单</a>
+  <a class="nav-chap" href="#chap-9">九、数据库设计</a>
+  <a class="nav-sec" href="#sec-9-1" data-chap="9">（一）设计原则</a>
+  <a class="nav-sec" href="#sec-9-2" data-chap="9">（二）E-R 关系</a>
+  <a class="nav-sec" href="#sec-9-3" data-chap="9">（三）12 张表清单</a>
+  <a class="nav-sec" href="#sec-9-4" data-chap="9">（四）核心表字段设计</a>
+  <a class="nav-sec" href="#sec-9-5" data-chap="9">（五）三个必须写进论文的设计权衡</a>
+  <a class="nav-sec" href="#sec-9-6" data-chap="9">（六）索引设计</a>
+  <a class="nav-sec" href="#sec-9-7" data-chap="9">（七）建表脚本片段</a>
+  <a class="nav-chap" href="#chap-10">十、路线推荐算法设计</a>
+  <a class="nav-sec" href="#sec-10-1" data-chap="10">（一）两段式结构：先硬过滤，再加权打分</a>
+  <a class="nav-sec" href="#sec-10-2" data-chap="10">（二）五个因子的定义</a>
+  <a class="nav-sec" href="#sec-10-3" data-chap="10">（三）评分要平滑，否则新路线永远排不上</a>
+  <a class="nav-sec" href="#sec-10-4" data-chap="10">（四）权重与理由生成</a>
+  <a class="nav-sec" href="#sec-10-5" data-chap="10">（五）游客怎么办</a>
+  <a class="nav-sec" href="#sec-10-6" data-chap="10">（六）可测试性</a>
+  <a class="nav-chap" href="#chap-11">十一、数据迁移方案</a>
+  <a class="nav-sec" href="#sec-11-1" data-chap="11">（一）字段映射</a>
+  <a class="nav-sec" href="#sec-11-2" data-chap="11">（二）分类归一的对照表</a>
+  <a class="nav-sec" href="#sec-11-3" data-chap="11">（三）迁移后的校验</a>
+  <a class="nav-chap" href="#chap-12">十二、说明书章节映射</a>
+  <a class="nav-sec" href="#sec-12-1" data-chap="12">写作时容易踩的四个坑</a>
+  <a class="nav-chap" href="#chap-13">十三、实施计划</a>
+  <a class="nav-sec" href="#sec-13-1" data-chap="13">排期上的三个提醒</a>
+  <a class="nav-chap" href="#chap-14">十四、交付物清单</a>
+  <a class="nav-chap" href="#chap-15">十五、需要你确认的三件事</a>
+</aside>
+<main>
+  <h1 class="doc-title">基于 Python 的户外徒步路线推荐<br>与路书分享平台的设计与实现</h1>
+  <p class="doc-sub">——既有项目整合与优化方案</p>
+  <div class="stats">
+    <div><b>33</b>张设计表</div>
+    <div><b>7</b>段代码示例</div>
+    <div><b>3.0 万</b>字</div>
+    <div><b>12</b>张数据库表</div>
+  </div>
+<div class="meta-card"><div class="meta-row"><dt>设计题目</dt><dd>基于Python的户外徒步路线推荐与路书分享平台的设计与实现</dd></div><div class="meta-row"><dt>学生姓名</dt><dd>唐锦明</dd></div><div class="meta-row"><dt>学号</dt><dd>202451024670</dd></div><div class="meta-row"><dt>班级</dt><dd>计网 G32401</dd></div><div class="meta-row"><dt>专业</dt><dd>计算机网络技术</dd></div><div class="meta-row"><dt>方案版本</dt><dd>V1.0（整合评审稿）</dd></div></div>
+<p class="note">本方案基于两份既有材料整合而成：① GitHub 仓库 A1864-ctrl/south-china-hiking-map-streamlit 与 A1864-ctrl/south-china-hiking-map-python 的实际源码与数据；② 桌面《毕设》目录下的《户外徒步平台_毕业设计内容说明与技术方案》《毕业设计任务书_模板填写版》，以及学校《毕业设计撰写规范》《毕业设计任务书-网站类（参考）》。方案只做取舍与设计，不含实现代码产物。</p>
+<h2 class="h1" id="chap-1"><span class="chap-no">01</span>一、核心结论</h2>
+<p class="para">在逐项比对之前，先给出五条结论。后续章节是对这五条结论的论证与落地设计。</p>
+<h4 class="h3">（一）两个仓库是同一个项目，不是两个项目</h4>
+<p class="para">两个仓库的文件清单、字节数完全一致：Home.py 847 B、app_utils.py 15,559 B、gpx_store.py 11,691 B、README.md 14,757 B、requirements.txt 728 B，data/、views/、tools/、screenshots/ 目录结构相同。唯一的差异是 python 仓多了一个 _archive-early-vue/ 目录和一份《说明-本地存档.md》。也就是说，所谓"两个项目整合"，实际是"一个项目 + 一份带 Vue 试验残留的存档"。python 仓的存档说明自己也写明了两者"代码独立、数据独立"，实为同一份代码的两次快照。</p>
+<p class="para">因此整合的第一步不是合并，而是去重：以 streamlit 仓为主干，python 仓只保留《说明-本地存档.md》作为资料留痕，源码与数据不重复保留，_archive-early-vue/ 直接删除——它含 Vue 3 + Vite，违反"只能使用 Python 和 MySQL"的硬约束。</p>
+<h4 class="h3">（二）现有项目是"只读看板"，不是"平台"，缺口在 6/8</h4>
+<p class="para">这个项目做得很扎实：155 个景点、34 条路线、15,330 个真实轨迹坐标点，3,708 行代码，还有一条 OSM → Valhalla 路网 → SRTM 高程的离线数据流水线。但它的形态是"Streamlit 单脚本 + pandas 读 CSV + 按热度排序"，没有用户、没有数据库、没有内容生产、没有后台。对照任务书八项主要任务，现成能满足的只有第（1）项景点浏览和第（2）项路线库；第（3）至（8）项——推荐、路书、收藏评价、个人中心、后台、账户安全——全部为零。</p>
+<p class="para">这意味着整合的重心不在"拼接"，而在"补壳"：把已有的数据与几何算法当作底座，在外面重建一套带用户体系、带 MySQL、带后台的平台。工作量分布大约是"数据与算法 20%、平台功能 80%"。</p>
+<h4 class="h3">（三）技术路线必须二选一，且任务书现有表述要改</h4>
+<p class="para">现在存在两个互相打架的方案：桌面那份《内容说明与技术方案》写的是 Django MVT + 模板渲染，而《任务书_模板填写版》写的是"前端 Streamlit，后端 FastAPI + Uvicorn"。两者不能同时成立，而且都不理想：Django 的 MVT 与任务书要求的"四层架构 + 接口层 + 接口文档"表述对不上；Streamlit 根本承载不了注册登录、多用户会话、内容审核和接口文档。</p>
+<p class="para">建议裁决为 FastAPI + Jinja2 模板 + MySQL 8.0，理由见第四章。同时任务书里"前端 Streamlit"这一句需要改成"前端 Jinja2 模板 + Bootstrap 5"——这是任务书定稿前必须改的一处硬伤，否则开题材料与最终成果自相矛盾。</p>
+<h4 class="h3">（四）功能范围要按任务书收敛，不能按原方案文档铺开</h4>
+<p class="para">原方案文档写了景点、路线、路书、社区帖子、评论点赞、搭子组队、举报、站内通知、天气、地图等十余个模块，比任务书的八项任务多出近一倍。这些多出来的模块（社区发帖、组队、举报、通知、天气）在任务书里没有对应条款，做成半成品反而会在答辩时被追问"哪些是核心"。建议一律列为"不纳入本期"，把省下的时间投到推荐算法的可解释性和数据质量上。</p>
+<h4 class="h3">（五）数据库要精确落在 12 张表</h4>
+<p class="para">任务书白纸黑字承诺"设计 12 张表并编写建表脚本"，这是要兑现的硬指标。现有项目 0 张表，需要全新设计。本方案给出恰好 12 张核心表的完整设计（第八章），并把 E-R 关系、字段、索引、以及三个必须写进论文的设计权衡一并给出。</p>
+<h2 class="h1" id="chap-2"><span class="chap-no">02</span>二、现状核查</h2>
+<h3 class="h2" id="sec-2-1">（一）两个仓库的比对结果</h3>
+<p class="para">按文件逐项核对，结果如表 2.1。除最后两行外，两个仓库没有任何差异。</p>
+<p class="caption" id="tbl---2-1">表 2.1  两个 GitHub 仓库文件清单比对</p>
+<div class="table-wrap"><table><colgroup><col style="width:25%"><col style="width:25%"><col style="width:25%"><col style="width:25%"></colgroup><thead><tr><th>文件 / 目录</th><th>south-china-hiking-map-streamlit</th><th>south-china-hiking-map-python</th><th>判定</th></tr></thead><tbody><tr><td>Home.py</td><td>847 B</td><td>847 B</td><td>相同</td></tr><tr><td>app_utils.py</td><td>15,559 B</td><td>15,559 B</td><td>相同</td></tr><tr><td>gpx_store.py</td><td>11,691 B</td><td>11,691 B</td><td>相同</td></tr><tr><td>README.md</td><td>14,757 B</td><td>14,757 B</td><td>相同</td></tr><tr><td>requirements.txt</td><td>728 B</td><td>728 B</td><td>相同</td></tr><tr><td>data/（4 类数据）</td><td>有</td><td>有</td><td>相同</td></tr><tr><td>views/（4 个页面）</td><td>有</td><td>有</td><td>相同</td></tr><tr><td>tools/（离线流水线）</td><td>有（9 个脚本）</td><td>有</td><td>相同</td></tr><tr><td>screenshots/、Dockerfile</td><td>有</td><td>有</td><td>相同</td></tr><tr><td>_archive-early-vue/</td><td>无</td><td>有（Vue 3 + Vite 试验）</td><td>仅存档有</td></tr><tr><td>说明-本地存档.md</td><td>无</td><td>有（2,778 B）</td><td>仅存档有</td></tr></tbody></table></div>
+<p class="note">结论：python 仓是 streamlit 仓的一次本地快照，多出的目录是早期前端试验残留，不具备独立项目价值。</p>
+<h3 class="h2" id="sec-2-2">（二）现有项目的真实能力边界</h3>
+<p class="para">把 3,708 行代码按功能维度拆开看，能清楚看到哪些是资产、哪些是空白。</p>
+<p class="caption" id="tbl---2-2">表 2.2  现有系统能力盘点</p>
+<div class="table-wrap"><table><colgroup><col style="width:33%"><col style="width:33%"><col style="width:33%"></colgroup><thead><tr><th>维度</th><th>现状实现</th><th>对本课题的意义</th></tr></thead><tbody><tr><td>数据存储</td><td>3 个 CSV + 37 个轨迹 JSON 文件，pandas 内存读取</td><td>无数据库，与"仅 MySQL"约束直接冲突</td></tr><tr><td>用户体系</td><td>无注册、无登录、无会话、无角色</td><td>任务书（6）（8）全缺</td></tr><tr><td>内容生产</td><td>仅支持上传 GPX 落到 CSV，无作者归属、无审核</td><td>路书功能为零，任务书（4）缺</td></tr><tr><td>互动</td><td>无收藏、无评价、无评论</td><td>任务书（5）缺</td></tr><tr><td>推荐</td><td>sort_values("heat") 单字段降序</td><td>任务书（3）要求五因子加权，不满足</td></tr><tr><td>后台</td><td>无（Streamlit 没有管理员概念）</td><td>任务书（7）缺</td></tr><tr><td>接口</td><td>无路由、无 REST、无接口文档</td><td>无法交付"接口文档与接口测试用例"</td></tr><tr><td>地理能力</td><td>haversine、抽稀、Tobler 速度、Naismith 耗时、坡度、高程剖面</td><td>可直接继承，是本项目最值钱的部分</td></tr><tr><td>数据资产</td><td>155 景点 / 34 路线 / 123 途经点 / 15,330 轨迹点</td><td>可直接入库，省去两个月采集</td></tr><tr><td>部署</td><td>Streamlit Cloud 或 Docker 单容器</td><td>与 FastAPI 项目不衔接，需重写</td></tr></tbody></table></div>
+<h3 class="h2" id="sec-2-3">（三）数据资产的可用性核查</h3>
+<p class="para">数据是这份材料最大的价值，但直接入库会踩坑。逐表核查后，有四个问题必须在迁移阶段处理。</p>
+<h4 class="h3">1. 路线类型没有归一，25 种取值里有同义重复</h4>
+<p class="para">34 条路线的 type 字段统计出 25 种不同取值，其中"山岳"6 条、"丹霞地貌"与"丹霞"并存、"田园"与"乡村田园"并存、"花岗岩"与"花岗岩峰林"并存。如果直接把这个字段当分类用，前台筛选会出现"丹霞"筛不到"丹霞地貌"的问题。必须建 category 字典表，迁移时做一次映射归一。</p>
+<h4 class="h3">2. 城市名口径不一致，景点用短名、路线用全称</h4>
+<p class="para">景点表 city 是"广州""深圳"，路线表 city 是"深圳市大鹏新区""衡阳市南岳区"。现有代码用 norm_city() 截取"市"之前的字符串硬凑（见 views/热度榜.py），这是绕不过去的补丁。正确做法是建 region 维表，景点和路线都存 region_id，彻底消除字符串匹配。这也是把"代码补丁"升级为"数据库设计"的一个好例子，答辩时可以讲。</p>
+<h4 class="h3">3. 最佳季节是自由文本，且存在跨年区间</h4>
+<p class="para">best_season 的取值有"5-10月""4-11月""10-5月""全年"等，其中"10-5月"是跨年区间（10 月到次年 5 月）。做季节匹配时如果按 start ≤ month ≤ end 判断，跨年路线会永远匹配不上。需要在迁移时解析成 season_start / season_end 两个整数月字段，并在算法里对 start &gt; end 的情况走环形区间判断。</p>
+<h4 class="h3">4. 字段有缺口，且部分空缺需要补</h4>
+<p class="para">景点表 13 个字段能覆盖任务书要求的名称、等级、门票、建议时长、最佳季节、特色、经纬度、热度，但缺"地址、开放时间、游览提示、封面图"。路线表 17 个字段覆盖里程、爬升、最高海拔、难度、耗时、季节、描述，但缺"累计下降、最低海拔、交通方式、补给建议、安全提示"。</p>
+<p class="para">好消息是累计下降和最低海拔不用手填——轨迹 JSON 的 stats 里已经有 descent_m 和 ele_min，迁移脚本读出来回填即可。剩下的文字类字段（交通、补给、安全提示）建议只给热度前 20 条补全，其余留空并在前台做空值兜底，避免为了填满字段耗掉两周。</p>
+<p class="caption" id="tbl---2-3">表 2.3  数据规模与分布</p>
+<div class="table-wrap"><table><colgroup><col style="width:33%"><col style="width:33%"><col style="width:33%"></colgroup><thead><tr><th>指标</th><th>数值</th><th>说明</th></tr></thead><tbody><tr><td>景点总数</td><td>155 条</td><td>广东 71 / 湖南 55 / 江西 16 / 广西 13</td></tr><tr><td>景点等级分布</td><td>5A 47 · 4A 89 · 3A 2 · 无等级 17</td><td>需把"无"转 NULL</td></tr><tr><td>覆盖城市</td><td>46 个</td><td>region 表由此生成</td></tr><tr><td>路线总数</td><td>34 条</td><td>广东 12 / 江西 10 / 湖南 8 / 广西 4</td></tr><tr><td>难度分布</td><td>入门 7 · 较易 7 · 中等 13 · 较难 5 · 难 2</td><td>两端样本少，测试需说明</td></tr><tr><td>里程区间</td><td>1.8 ~ 44.63 km，中位数 10.2 km</td><td>跨度大，筛选区间设计合理</td></tr><tr><td>爬升区间</td><td>0 ~ 2,488 m，中位数 544 m</td><td>含 0 爬升的田园线，算法需容错</td></tr><tr><td>途经点</td><td>123 个（平均 3.6 个/条）</td><td>route_waypoint 表数据量</td></tr><tr><td>轨迹坐标点</td><td>15,330 个</td><td>决定轨迹是否逐点入库的关键数字</td></tr><tr><td>代码规模</td><td>3,708 行（运行时 1,859 + 工具链 1,849）</td><td>可继承的运行时部分不足一半</td></tr></tbody></table></div>
+<h3 class="h2" id="sec-2-4">（四）原方案文档的定位偏差</h3>
+<p class="para">《户外徒步平台_毕业设计内容说明与技术方案》这份文档，结构是"设计题目 / 学生姓名 / 一、毕业设计目标 / …… / 十四、指导教师意见"，本质是任务书的扩写版，不是说明书。它直接写进论文会出现两个问题：一是章节体系与学校模板不一致；二是"指导教师意见""教研室审核意见"这类签署栏不该出现在说明书正文里。</p>
+<p class="para">不过它的价值在于把功能描述写得足够细，可以直接作为需求分析章节的素材。建议保留其功能描述，替换其章节骨架，详见第十一章的章节映射表。</p>
+<h2 class="h1" id="chap-3"><span class="chap-no">03</span>三、匹配度逐项分析</h2>
+<h3 class="h2" id="sec-3-1">（一）与任务书八项任务的匹配</h3>
+<p class="para">这是最该优先对齐的一条线：任务书是评审依据，八项任务就是验收清单。逐项比对如下。</p>
+<p class="caption" id="tbl---3-1">表 3.1  现有实现与任务书八项任务的匹配度</p>
+<div class="table-wrap"><table><colgroup><col style="width:25%"><col style="width:25%"><col style="width:25%"><col style="width:25%"></colgroup><thead><tr><th>任务书条款</th><th>现有实现情况</th><th>匹配度</th><th>需要补的工作</th></tr></thead><tbody><tr><td>（1）景点信息浏览</td><td>有。支持省份、类型、热度筛选和关键词搜索，字段含等级、门票、建议时长、最佳季节、特色，地图联动</td><td>高</td><td>去掉 Streamlit 组件，改 SQL 查询 + 分页；补地址、开放时间字段</td></tr><tr><td>（2）徒步路线库</td><td>有。四维筛选、轨迹地图、高程剖面、速度曲线、途经点表、GPX 导出</td><td>高</td><td>地图由 folium 迁到 Leaflet；轨迹统计改为服务端计算</td></tr><tr><td>（3）路线推荐</td><td>无。只有按 heat 单字段排序</td><td>无</td><td>全新开发：五因子加权 + 贝叶斯平滑 + 理由生成</td></tr><tr><td>（4）路书分享</td><td>无。连表结构都没有</td><td>无</td><td>全新开发：发布、编辑、删除、检索、审核</td></tr><tr><td>（5）收藏与评价</td><td>无</td><td>无</td><td>全新开发：三对象收藏、四维评分、评分回流推荐</td></tr><tr><td>（6）个人中心</td><td>无</td><td>无</td><td>全新开发：资料、偏好、我的路书、我的收藏、我的评价</td></tr><tr><td>（7）后台管理</td><td>无</td><td>无</td><td>全新开发：五类内容 CRUD + 路书审核 + 统计看板</td></tr><tr><td>（8）账户安全</td><td>无</td><td>无</td><td>全新开发：PBKDF2 加盐、改密校验原密码、安全退出</td></tr></tbody></table></div>
+<p class="note">八项任务中，2 项可直接继承，6 项需要从零开发。这是本方案所有工作量估算的基准。</p>
+<h3 class="h2" id="sec-3-2">（二）与技术约束的匹配</h3>
+<p class="para">约束只有一句"只能使用 Python 和 MySQL"，但落到具体文件上，有两处真实违反、一处需要澄清。</p>
+<p class="caption" id="tbl---3-2">表 3.2  与技术约束的匹配</p>
+<div class="table-wrap"><table><colgroup><col style="width:25%"><col style="width:25%"><col style="width:25%"><col style="width:25%"></colgroup><thead><tr><th>约束</th><th>现状</th><th>判定</th><th>处理</th></tr></thead><tbody><tr><td>仅用 Python 作开发语言</td><td>运行时代码均为 Python（Streamlit / pandas / folium / altair）</td><td>基本满足</td><td>保留 Python 技术栈</td></tr><tr><td>不得引入其他编程语言</td><td>_archive-early-vue/ 含 Vue 3 单文件组件与 Vite 配置；另一仓库存在 web/ 目录（Vite 试验）</td><td>违反</td><td>整目录删除，不进交付物</td></tr><tr><td>仅用 MySQL 作数据库</td><td>零 SQL。3 个 CSV + 37 个 JSON 即全部存储</td><td>违反</td><td>MySQL 为唯一持久层，CSV/JSON 降级为一次性种子数据</td></tr><tr><td>12 张表</td><td>0 张</td><td>不满足</td><td>第八章给出恰好 12 张表</td></tr><tr><td>四层架构</td><td>Streamlit 脚本式，无分层</td><td>不满足</td><td>FastAPI 四层落点见第四章</td></tr></tbody></table></div>
+<h4 class="h3">需要澄清的一处边界：前端算不算"其他语言"</h4>
+<p class="para">浏览器只认 HTML、CSS、JavaScript，任何 Web 系统都不可能完全不用 JS。如果按字面理解"不得引入其他语言"，连表格排序、表单校验都做不了。建议在说明书的"技术路线"一节里明确界定：服务端业务逻辑与数据处理只用 Python；前端仅使用 HTML5、CSS3 和原生 JavaScript，图表用 ECharts、地图用 Leaflet 这类前端库，不引入 Vue、React 等框架，不使用 Node.js 构建链。这样既守住了约束的本意（不搞前后端双语言工程），又不会在答辩时被"你用了 JS"问住。这段界定建议直接写进论文，属于加分项。</p>
+<h3 class="h2" id="sec-3-3">（三）与说明书模板的匹配</h3>
+<p class="para">学校《毕业设计撰写规范》的要求很具体，现有文档几乎没有对上。这不是内容问题，是体例问题，需要整体重排。</p>
+<p class="caption" id="tbl---3-3">表 3.3  现有文档与模板规范的匹配</p>
+<div class="table-wrap"><table><colgroup><col style="width:33%"><col style="width:33%"><col style="width:33%"></colgroup><thead><tr><th>模板要求</th><th>现有文档情况</th><th>判定</th></tr></thead><tbody><tr><td>六个组成部分：封面、独创性声明、目录、正文、参考资料、附录</td><td>任务书体，14 节 + 三级签署栏</td><td>不符</td></tr><tr><td>标题层级：一、／（一）／1. 共三级</td><td>只有"一、""（一）"两级，无三级标题</td><td>部分符合</td></tr><tr><td>图序分章编号（图 3.2）、表序分章编号（表 3.1），图题在下、表题在上</td><td>全文无图、无表、无编号</td><td>不符</td></tr><tr><td>字数：理工科 8 千字左右</td><td>约 5 千字，且多为条目式罗列</td><td>不足</td></tr><tr><td>参考资料按引用顺序排列，选近 3 年文献，标题写"参考资料"不写"参考文献"</td><td>无参考资料</td><td>缺</td></tr><tr><td>页眉为毕业设计题目，五号宋体居中带下划线；目录罗马数字、正文阿拉伯数字</td><td>无页眉页码设置</td><td>缺</td></tr><tr><td>页边距：左 2.9、右 2.9、上 2.5、下 2.5 cm；页眉 1.5、页脚 1.75 cm</td><td>默认页边距</td><td>不符</td></tr><tr><td>一级标题黑体四号居中，段前 24 磅、段后 18 磅，每个一级标题另起一页</td><td>字体字号未统一</td><td>不符</td></tr></tbody></table></div>
+<p class="note">本方案文档本身已按上述版式排版（页边距、标题层级、图表编号、页眉页码），可作为说明书排版的参照样本。</p>
+<h3 class="h2" id="sec-3-4">（四）匹配度汇总</h3>
+<p class="para">把四条线叠在一起看，问题的性质很清楚：数据与展示能力超前，平台骨架缺失，体例完全不对。</p>
+<p class="caption" id="tbl---3-4">表 3.4  四条评价线的整体结论</p>
+<div class="table-wrap"><table><colgroup><col style="width:33%"><col style="width:33%"><col style="width:33%"></colgroup><thead><tr><th>评价线</th><th>结论</th><th>主要动作</th></tr></thead><tbody><tr><td>课题目标</td><td>数据与路线展示部分已超额完成；"推荐"与"分享"两个题眼均未落地</td><td>补齐推荐算法与路书体系</td></tr><tr><td>任务书</td><td>2/8 项可继承，6/8 项为零</td><td>按八项任务清单逐项开发</td></tr><tr><td>说明书模板</td><td>体例完全不符，需按模板重排</td><td>换骨架、加图表编号、补文献</td></tr><tr><td>技术约束</td><td>语言基本合规但含 Vue 残留；MySQL 完全缺失</td><td>删 Vue 目录、建 12 张表</td></tr></tbody></table></div>
+<h2 class="h1" id="chap-4"><span class="chap-no">04</span>四、冲突与冗余清单</h2>
+<p class="para">下面把需要决策的点一次列全，每条给出裁决和理由。裁决结果直接决定后面几章的设计。</p>
+<h3 class="h2" id="sec-4-1">（一）硬冲突：不改则不成立</h3>
+<p class="caption" id="tbl---4-1">表 4.1  硬冲突清单与裁决</p>
+<div class="table-wrap"><table><colgroup><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"></colgroup><thead><tr><th>编号</th><th>冲突点</th><th>冲突表现</th><th>裁决</th><th>理由</th></tr></thead><tbody><tr><td>C1</td><td>两个仓库重复</td><td>文件逐项相同，仅多一个 Vue 目录</td><td>以 streamlit 仓为主干，python 仓只留说明文件</td><td>合并同源代码不产生任何新价值，只会让代码库混乱</td></tr><tr><td>C2</td><td>框架三选一</td><td>Django MVT ／ FastAPI+Streamlit ／ FastAPI+Jinja2 三种说法并存</td><td>FastAPI + Jinja2 + MySQL</td><td>唯一同时满足"四层架构""接口文档""可做平台"三项的方案，详见第五章</td></tr><tr><td>C3</td><td>Streamlit 承载不了平台</td><td>无路由、无会话、无角色、无 CRUD 后台、无接口</td><td>放弃 Streamlit 作为交付形态</td><td>任务书（6）（7）（8）在 Streamlit 下无法实现</td></tr><tr><td>C4</td><td>CSV 当数据库</td><td>pandas 直接读 CSV，无任何 SQL</td><td>MySQL 为唯一存储，CSV 降级为种子</td><td>"仅 MySQL"是硬约束</td></tr><tr><td>C5</td><td>功能范围过宽</td><td>原方案写了社区发帖、搭子组队、举报、通知、天气等 6 个额外模块</td><td>按任务书八项收敛，其余列为不做</td><td>额外模块在任务书里无对应条款，做半成品反而稀释核心</td></tr><tr><td>C6</td><td>表数量承诺</td><td>任务书承诺 12 张，现为 0 张</td><td>精确设计 12 张</td><td>论文与任务书必须对得上，答辩会核</td></tr><tr><td>C7</td><td>语言边界模糊</td><td>前端必然用到 JS，但约束说"不得引入其他语言"</td><td>界定为"服务端只用 Python，前端限 HTML/CSS/原生 JS + 图表库"</td><td>守住约束本意，避免自相矛盾</td></tr><tr><td>C8</td><td>部署方式</td><td>Streamlit Cloud 只能跑 Streamlit</td><td>云服务器 + Nginx + systemd/Gunicorn</td><td>任务书要求"部署到云端"且需可复现</td></tr><tr><td>C9</td><td>示意轨迹是假数据</td><td>app_utils.gen_track() 按标称里程"反推"一条折线</td><td>删除该函数，只用真实轨迹 JSON</td><td>毕业设计里出现伪造轨迹，性质是学术不端，风险不可接受</td></tr><tr><td>C10</td><td>地图瓦片合规</td><td>直连高德瓦片且无 API Key</td><td>论文注明仅教学演示；或改用 OSM 瓦片</td><td>生产环境需授权，说明书应主动声明</td></tr></tbody></table></div>
+<h3 class="h2" id="sec-4-2">（二）冗余：建议删除或降级</h3>
+<p class="caption" id="tbl---4-2">表 4.2  冗余项处理</p>
+<div class="table-wrap"><table><colgroup><col style="width:25%"><col style="width:25%"><col style="width:25%"><col style="width:25%"></colgroup><thead><tr><th>内容</th><th>位置</th><th>冗余原因</th><th>处理</th></tr></thead><tbody><tr><td>城市热度榜（含加权公式、散点图、榜单导出）</td><td>views/热度榜.py，9,735 B</td><td>任务书未要求该功能；其价值是"热度"字段的来源，而非独立页面</td><td>降级为首页的"热门城市"小组件</td></tr><tr><td>离线数据流水线 9 个脚本</td><td>tools/，约 1,849 行</td><td>属于数据生产工具，不是系统功能；且依赖 Overpass、Valhalla、OpenTopoData 三个外部服务</td><td>移出交付物，仅在论文"数据来源"一节说明方法与授权</td></tr><tr><td>Streamlit 专用部署文件</td><td>Dockerfile、start_local.bat、部署手册.md</td><td>换框架后全部失效</td><td>重写为 Gunicorn + Nginx 部署说明</td></tr><tr><td>轨迹体检报告</td><td>轨迹体检报告.md，6,360 B</td><td>是数据质量记录，不是系统文档</td><td>转为论文"数据预处理"一节的素材与附录</td></tr><tr><td>任务书体章节</td><td>原方案文档的"设计题目""指导教师意见""教研室审核意见"</td><td>属于任务书格式，说明书正文不该出现</td><td>删除，按模板重排</td></tr><tr><td>重复的路线指标展示</td><td>views/徒步路线.py 的指标卡、途经点表、速度曲线</td><td>三处展示同一组数据，页面信息密度过高</td><td>合并为"路线数据"一栏 + 可折叠剖面</td></tr><tr><td>截图与演示素材</td><td>screenshots/（4 张 1440×1000）</td><td>是旧界面截图，换框架后不可用</td><td>删除，验收后重新截图</td></tr></tbody></table></div>
+<h3 class="h2" id="sec-4-3">（三）必须在任务书定稿前改掉的一处</h3>
+<p class="para">《毕业设计任务书_模板填写版》"实现步骤和方法"一栏写着"实现方法：Python 3.13 为唯一语言，前端 Streamlit，后端 FastAPI + Uvicorn"。这句话有两个问题：一是与最终选定的技术栈不符，二是"前端 Streamlit"本身就是个矛盾的说法——Streamlit 不是前端框架，它是把 Python 脚本渲染成页面的服务端框架。</p>
+<p class="para">建议改为："实现方法：Python 3.13 为唯一开发语言，后端采用 FastAPI + Uvicorn 提供 REST 接口，前端采用 Jinja2 模板 + Bootstrap 5 + 原生 JavaScript，地图使用 Leaflet，图表使用 ECharts，数据库采用 MySQL 8.0 配合 SQLAlchemy ORM 与 PyMySQL 驱动，开发工具 VS Code、Git。"</p>
+<p class="para">这一句改完，任务书、开题材料、说明书、答辩 PPT 四处口径就统一了。</p>
+<h2 class="h1" id="chap-5"><span class="chap-no">05</span>五、技术方案裁决</h2>
+<h3 class="h2" id="sec-5-1">（一）三条路线的对比</h3>
+<p class="para">三个候选方案都能满足"只用 Python"，差别在于能不能撑起"平台"这个词。</p>
+<p class="caption" id="tbl---5-1">表 5.1  三种技术路线对比</p>
+<div class="table-wrap"><table><colgroup><col style="width:25%"><col style="width:25%"><col style="width:25%"><col style="width:25%"></colgroup><thead><tr><th>对比项</th><th>方案 A：Django MVT</th><th>方案 B：FastAPI + Streamlit</th><th>方案 C：FastAPI + Jinja2</th></tr></thead><tbody><tr><td>语言约束</td><td>满足</td><td>满足</td><td>满足</td></tr><tr><td>与"四层架构"表述</td><td>不符（MVT 是三层，且无独立接口层）</td><td>勉强（无接口层）</td><td>完全对应</td></tr><tr><td>接口文档</td><td>需额外引入 DRF</td><td>无接口，无法产出</td><td>自动生成 OpenAPI /docs</td></tr><tr><td>接口测试用例</td><td>可用 DRF 测试</td><td>无接口可测</td><td>pytest + TestClient 直接对应</td></tr><tr><td>多用户与权限</td><td>强（内置）</td><td>弱（无会话概念）</td><td>强（依赖注入 + JWT/Session）</td></tr><tr><td>后台管理</td><td>白送 Django Admin</td><td>无</td><td>需自建（工作量真实可见）</td></tr><tr><td>与任务书现有表述</td><td>冲突</td><td>冲突（做不出平台）</td><td>一致</td></tr><tr><td>主要风险</td><td>"接口层""四层架构"无法自圆其说；Admin 白送导致工作量被质疑</td><td>任务书 6 项功能无法实现</td><td>页面层代码量大</td></tr></tbody></table></div>
+<h3 class="h2" id="sec-5-2">（二）选定方案与四条理由</h3>
+<p class="para">裁决为方案 C：FastAPI + Jinja2 模板 + MySQL 8.0 + SQLAlchemy 2.0 + PyMySQL。</p>
+<p class="bullet">理由一，四层架构能逐层落地。表现层是 Jinja2 模板与静态资源，接口层是 FastAPI 路由，服务层是业务函数，数据层是 SQLAlchemy 模型与会话。任务书要求"按数据层、服务层、接口层、表现层顺序分模块开发"，这个结构可以原样对应，论文里画架构图也不用硬凑。</p>
+<p class="bullet">理由二，接口文档与接口测试用例是任务书明确的预期成果。FastAPI 自带 OpenAPI，访问 /docs 即可导出接口文档；pytest 配合 TestClient 写用例，天然就是"接口测试用例及执行记录"。这一条在 Streamlit 方案下根本无法交付。</p>
+<p class="bullet">理由三，后台管理必须自己写。Django Admin 虽然省事，但答辩时评委看到"后台是框架送的"，会直接质疑工作量与设计能力。FastAPI 方案下后台的列表、筛选、审核、统计都要自己实现，这部分恰恰是能讲清楚"我做了什么"的地方。</p>
+<p class="bullet">理由四，只有一个 Python 进程。没有 Node、没有 npm、没有构建产物，部署就是 Gunicorn 起一个进程，既贴合"只用 Python"的约束，也降低了云端部署的失败率。</p>
+<h4 class="h3">需要接受的代价</h4>
+<p class="para">Jinja2 模板意味着列表页、表单页、详情页都要手写 HTML，页面工作量比 Streamlit 高出一个量级。缓解办法有三条：一是统一 base.html 与组件宏，把导航、卡片、分页、表单控件做成 macro；二是列表页用服务端分页而不做无限滚动；三是只对收藏、点赞这类轻交互用 fetch 局部刷新，其余走整页跳转。按这个策略，12 个页面的模板工作量可以控制在可接受范围。</p>
+<h3 class="h2" id="sec-5-3">（三）四层架构的落点</h3>
+<p class="caption" id="tbl---5-2">表 5.2  四层架构与目录、技术的对应</p>
+<div class="table-wrap"><table><colgroup><col style="width:25%"><col style="width:25%"><col style="width:25%"><col style="width:25%"></colgroup><thead><tr><th>层次</th><th>职责</th><th>对应目录</th><th>关键技术</th></tr></thead><tbody><tr><td>表现层</td><td>页面渲染、静态资源、地图与图表初始化</td><td>app/templates/、app/static/</td><td>Jinja2、Bootstrap 5、Leaflet、ECharts</td></tr><tr><td>接口层</td><td>路由定义、参数校验、权限拦截、响应组装</td><td>app/api/</td><td>FastAPI、Pydantic、依赖注入</td></tr><tr><td>服务层</td><td>业务规则、推荐打分、轨迹计算、审核流转</td><td>app/services/</td><td>纯 Python 函数，可单测</td></tr><tr><td>数据层</td><td>模型定义、会话管理、查询构造</td><td>app/models/、app/db.py</td><td>SQLAlchemy 2.0、PyMySQL</td></tr></tbody></table></div>
+<h2 class="h1" id="chap-6"><span class="chap-no">06</span>六、功能范围优化</h2>
+<h3 class="h2" id="sec-6-1">（一）三层功能边界</h3>
+<p class="para">把功能分成"必做、特色、不做"三层，写进说明书的功能结构图。边界一旦定下就不再增加，这是按期交付的前提。</p>
+<p class="caption" id="tbl---6-1">表 6.1  功能边界三层划分</p>
+<div class="table-wrap"><table><colgroup><col style="width:25%"><col style="width:25%"><col style="width:25%"><col style="width:25%"></colgroup><thead><tr><th>层级</th><th>功能</th><th>对应任务书</th><th>取舍理由</th></tr></thead><tbody><tr><td>必做 F1</td><td>景点浏览与筛选</td><td>（1）</td><td>直接继承现有数据与筛选逻辑</td></tr><tr><td>必做 F2</td><td>徒步路线库与轨迹展示</td><td>（2）</td><td>直接继承，地图与剖面是亮点</td></tr><tr><td>必做 F3</td><td>路线推荐（可解释）</td><td>（3）</td><td>课题题眼，必须自己做，见第九章</td></tr><tr><td>必做 F4</td><td>路书发布与分享</td><td>（4）</td><td>课题题眼之二，全新开发</td></tr><tr><td>必做 F5</td><td>收藏与路线评价</td><td>（5）</td><td>评价分数回流推荐，形成闭环</td></tr><tr><td>必做 F6</td><td>个人中心</td><td>（6）</td><td>把 F4、F5 的产出聚合起来</td></tr><tr><td>必做 F7</td><td>后台管理</td><td>（7）</td><td>含路书审核与统计看板</td></tr><tr><td>必做 F8</td><td>账户安全</td><td>（8）</td><td>PBKDF2 加盐 + 改密校验原密码</td></tr><tr><td>特色 S1</td><td>推荐理由自然语言生成</td><td>（3）延伸</td><td>把"为什么推荐它"说清楚，区别于普通排序</td></tr><tr><td>特色 S2</td><td>轨迹高程剖面与坡度分析</td><td>（2）延伸</td><td>已实现，迁到 Leaflet + ECharts 即可</td></tr><tr><td>特色 S3</td><td>路书轨迹附件（GPX 上传与导出）</td><td>（4）延伸</td><td>已实现，正好补上路书缺"路线实证"的短板</td></tr><tr><td>特色 S4</td><td>热门路线榜与城市资源榜</td><td>—</td><td>由现有热度模型改造，作为首页模块</td></tr><tr><td>不做 N1</td><td>社区发帖、评论点赞体系</td><td>无</td><td>任务书无此条，且与路书功能重叠</td></tr><tr><td>不做 N2</td><td>徒步搭子组队与报名审核</td><td>无</td><td>需要一个完整的状态机，工期不可控</td></tr><tr><td>不做 N3</td><td>内容举报与站内通知</td><td>无</td><td>依附于 N1，一并去掉</td></tr><tr><td>不做 N4</td><td>实时天气、GPS 导航、即时通讯</td><td>无</td><td>强依赖第三方服务，演示不稳定</td></tr><tr><td>不做 N5</td><td>机器学习推荐模型</td><td>无</td><td>规则评分已能说明问题，训模型反而讲不清</td></tr></tbody></table></div>
+<h3 class="h2" id="sec-6-2">（二）必做功能的验收标准</h3>
+<p class="para">每条功能都要能被一句话验收，否则测试章节写不出用例。</p>
+<p class="caption" id="tbl---6-2">表 6.2  必做功能验收标准</p>
+<div class="table-wrap"><table><colgroup><col style="width:33%"><col style="width:33%"><col style="width:33%"></colgroup><thead><tr><th>编号</th><th>功能</th><th>验收标准（可测）</th></tr></thead><tbody><tr><td>F1</td><td>景点浏览</td><td>按省份+城市+类型+关键词四个条件任意组合筛选，结果正确；详情页展示等级、门票、建议时长、最佳季节、经纬度定位；可跳转至该城市的路线列表</td></tr><tr><td>F2</td><td>路线库</td><td>按省份+难度+里程区间筛选；详情页地图绘出轨迹折线与编号途经点；展示里程、累计爬升/下降、最高/最低海拔、预计耗时；高程剖面可交互缩放</td></tr><tr><td>F3</td><td>路线推荐</td><td>输入难度偏好、里程上限、出行月份后返回 Top10 并按匹配度降序；每条附中文推荐理由；调整任一条件结果随之变化；无结果时给出放宽建议</td></tr><tr><td>F4</td><td>路书分享</td><td>登录用户可发布含标题、关联路线、出行日期、天数、交通、费用、装备、注意事项、正文、封面的路书；可编辑与删除本人路书；列表支持关键词检索与路线筛选；未登录不可发布</td></tr><tr><td>F5</td><td>收藏与评价</td><td>可收藏景点、路线、路书三类对象，重复收藏被唯一约束拦截；可对路线打四项分并写评价，同一用户对同一路线仅一条；评价后该路线均分即时更新</td></tr><tr><td>F6</td><td>个人中心</td><td>展示并修改昵称、头像、城市、简介、徒步偏好；分页展示我的路书、收藏、评价；可取消收藏</td></tr><tr><td>F7</td><td>后台管理</td><td>管理员可对景点、路线、路书、评价、用户执行增删改查；路书需审核后才能在前台展示；统计页展示六项总数与近 7 日新增</td></tr><tr><td>F8</td><td>账户安全</td><td>密码以 PBKDF2 加盐哈希存储，数据库中无明文；改密需校验原密码；退出后受保护页面立即不可访问</td></tr></tbody></table></div>
+<h2 class="h1" id="chap-7"><span class="chap-no">07</span>七、业务流程设计</h2>
+<h3 class="h2" id="sec-7-1">（一）角色与权限</h3>
+<p class="para">四个角色里，"活动发起人"随"不做 N2 组队"一并去掉，只保留游客、注册用户、管理员三个角色。</p>
+<p class="caption" id="tbl---7-1">表 7.1  角色权限矩阵</p>
+<div class="table-wrap"><table><colgroup><col style="width:25%"><col style="width:25%"><col style="width:25%"><col style="width:25%"></colgroup><thead><tr><th>功能</th><th>游客</th><th>注册用户</th><th>管理员</th></tr></thead><tbody><tr><td>浏览景点 / 路线 / 路书列表与详情</td><td>√</td><td>√</td><td>√</td></tr><tr><td>查看推荐结果</td><td>√（用默认偏好）</td><td>√（用本人偏好）</td><td>√</td></tr><tr><td>注册 / 登录</td><td>√</td><td>—</td><td>—</td></tr><tr><td>发布 / 编辑 / 删除本人路书</td><td>×</td><td>√</td><td>√（可删除任意）</td></tr><tr><td>收藏、评价、修改个人资料</td><td>×</td><td>√</td><td>√</td></tr><tr><td>路书审核、内容下架</td><td>×</td><td>×</td><td>√</td></tr><tr><td>景点 / 路线 / 用户管理</td><td>×</td><td>×</td><td>√</td></tr><tr><td>统计看板</td><td>×</td><td>×</td><td>√</td></tr></tbody></table></div>
+<h3 class="h2" id="sec-7-2">（二）四条主流程</h3>
+<h4 class="h3">1. 找路线：从筛选到出发</h4>
+<p class="para">游客进入首页 → 看到热门路线与推荐入口 → 进入路线库，按省份、难度、里程区间筛选 → 点开详情，看轨迹地图、高程剖面、途经点与安全提示 → 若已登录，可点"收藏"或"写评价"。若从"推荐"进入，则先填三个偏好（难度、里程上限、出行月份），系统返回 Top10 与理由，再点进详情。这条流程的关键是：游客也能看到推荐结果，用一组默认偏好兜底，降低首次使用门槛。</p>
+<h4 class="h3">2. 发路书：从写完到上线</h4>
+<p class="para">登录用户点"发布路书" → 填写标题、出行日期、天数、交通、费用、装备、注意事项与正文 → 选择关联路线（可从已浏览过的路线里选，也可不关联）→ 可选上传 GPX 轨迹文件作为实证 → 提交后状态为"待审核"，本人在个人中心可见 → 管理员在后台审核，通过则前台可见，驳回则填写原因 → 作者可编辑后重新提交。审核状态用 0 待审、1 通过、2 驳回三个值，不用布尔字段。</p>
+<h4 class="h3">3. 评价回流：让分数影响推荐</h4>
+<p class="para">用户完成徒步后在路线详情页打分（风景、难度、交通、整体四项，1~5 分）→ 服务层写入 route_review → 同时重算该路线的加权平均分（含贝叶斯平滑，见第九章）→ 下次任何人请求推荐时，评分因子 R 使用最新值。这条闭环是"评价"与"推荐"两个功能之间的连接点，也是论文里可以画一张数据流图的地方。新路线评价数为 0 时，平滑公式会把它拉向全局均值，避免冷启动被埋没。</p>
+<h4 class="h3">4. 后台治理：审核与统计</h4>
+<p class="para">管理员登录 → 进入后台首页看统计卡（用户数、景点数、路线数、路书数、评价数、待审路书数）→ 进入路书审核列表，按状态筛选，逐条通过或驳回 → 进入路线管理，编辑难度、季节、安全提示 → 进入用户管理，禁用违规账号。所有写操作记录操作人与时间，便于追溯。</p>
+<h2 class="h1" id="chap-8"><span class="chap-no">08</span>八、模块划分与代码复用</h2>
+<h3 class="h2" id="sec-8-1">（一）目录结构</h3>
+<p class="para">目标结构如下。与现有项目相比，views/ 的四个 Streamlit 页面被拆成 api 路由 + services 业务 + templates 模板三层，data/ 保留为种子数据，tools/ 移出。</p>
+<pre class="code"><code>hiking_platform/
+├── app/
+│   ├── main.py                  # FastAPI 实例、中间件、静态挂载、路由注册
+│   ├── core/
+│   │   ├── config.py            # 配置（数据库、密钥、分页大小、推荐权重）
+│   │   ├── security.py          # PBKDF2 哈希、会话/令牌、登录校验
+│   │   └── deps.py              # 依赖注入：当前用户、管理员校验、分页参数
+│   ├── models/                  # SQLAlchemy 模型，12 张表一一对应
+│   │   ├── user.py  region.py  category.py  attraction.py
+│   │   ├── route.py  roadbook.py  interaction.py
+│   ├── schemas/                 # Pydantic 请求/响应模型
+│   ├── services/
+│   │   ├── recommend.py         # 五因子打分 + 理由生成  ★核心
+│   │   ├── geo.py               # haversine、统计、坡度、Naismith、Tobler
+│   │   ├── gpx.py               # GPX 解析、导出、平滑去噪
+│   │   ├── roadbook.py          # 发布、审核状态流转
+│   │   └── stats.py             # 后台统计、热门榜聚合
+│   ├── api/                     # 接口层，每个模块一个 router
+│   │   ├── auth.py  attraction.py  route.py  recommend.py
+│   │   ├── roadbook.py  favorite.py  review.py  admin.py
+│   ├── web/                     # 页面路由（渲染 Jinja2 模板）
+│   ├── templates/               # base.html + 12 个页面 + macros/
+│   └── static/                  # css / js / 图片
+├── data/
+│   ├── seed/attractions.csv  hiking_routes.csv
+│   └── tracks/*.json            # 34 条真实轨迹（原样保留）
+├── sql/
+│   ├── schema.sql               # 12 张建表脚本
+│   └── seed.sql                 # 初始化数据
+├── scripts/
+│   ├── init_db.py               # 建库建表
+│   └── import_seed.py           # CSV/JSON → MySQL，幂等
+├── tests/
+│   ├── test_geo.py  test_recommend.py  test_api_*.py
+├── requirements.txt
+└── README.md</code></pre>
+<h3 class="h2" id="sec-8-2">（二）模块职责</h3>
+<p class="para">下表模块除注明外均位于 app/services/ 目录下。</p>
+<p class="caption" id="tbl---8-1">表 8.1  模块职责划分</p>
+<div class="table-wrap"><table><colgroup><col style="width:25%"><col style="width:25%"><col style="width:25%"><col style="width:25%"></colgroup><thead><tr><th>模块</th><th>职责</th><th>关键函数</th><th>来源</th></tr></thead><tbody><tr><td>geo.py</td><td>几何与地形计算，纯函数无副作用</td><td>haversine_m、track_stats、steepest_section、naismith_hours、tobler_speed</td><td>改编自 app_utils.py</td></tr><tr><td>gpx.py</td><td>GPX 解析、导出、噪声处理</td><td>parse_gpx、track_to_gpx、smooth_elevation</td><td>改编自 app_utils.py 与 gpx_store.py</td></tr><tr><td>recommend.py</td><td>候选过滤、五因子打分、理由生成</td><td>filter_candidates、score_route、bayesian_rating、explain</td><td>全新，现有代码只有 heat 排序</td></tr><tr><td>roadbook.py</td><td>路书增删改、审核流转、权限判断</td><td>create_roadbook、review_roadbook、can_edit</td><td>全新</td></tr><tr><td>stats.py</td><td>后台统计、热门榜聚合</td><td>dashboard_counts、hot_routes、city_resource</td><td>改编自 views/热度榜.py</td></tr><tr><td>api/*.py</td><td>接口定义、参数校验、权限依赖</td><td>各 router 的 get / post / put / delete</td><td>全新</td></tr><tr><td>web/*.py</td><td>页面路由，组装模板上下文</td><td>index、route_list、route_detail 等</td><td>替代 views/ 四页</td></tr><tr><td>templates/</td><td>页面骨架与组件宏</td><td>base.html、macros/form.html、macros/card.html</td><td>全新</td></tr></tbody></table></div>
+<h3 class="h2" id="sec-8-3">（三）代码复用映射</h3>
+<p class="para">现有 1,859 行运行时代码里，真正值得搬的是几何算法和 GPX 处理两段。逐项对应如下。</p>
+<p class="caption" id="tbl---8-2">表 8.2  现有代码的复用与改造映射</p>
+<div class="table-wrap"><table><colgroup><col style="width:25%"><col style="width:25%"><col style="width:25%"><col style="width:25%"></colgroup><thead><tr><th>现有实现</th><th>位置</th><th>新位置</th><th>改造动作</th></tr></thead><tbody><tr><td>haversine_m()</td><td>app_utils.py</td><td>services/geo.py</td><td>原样迁移</td></tr><tr><td>track_stats()</td><td>app_utils.py</td><td>services/geo.py</td><td>增加 5 点滑动平均 + 3 m 死区，修正 GPS 抖动导致的爬升虚高</td></tr><tr><td>naismith_hours()</td><td>views/徒步路线.py</td><td>services/geo.py</td><td>原样迁移</td></tr><tr><td>steepest_section()</td><td>views/徒步路线.py</td><td>services/geo.py</td><td>原样迁移，阈值 40 m 保留</td></tr><tr><td>Tobler 速度推算</td><td>轨迹 JSON 预计算</td><td>services/geo.py</td><td>改为服务端实时计算，便于参数可调</td></tr><tr><td>parse_gpx() / track_to_gpx()</td><td>app_utils.py</td><td>services/gpx.py</td><td>增加文件大小与点数上限校验（防大文件拖垮进程）</td></tr><tr><td>双层描边轨迹 + 编号 DivIcon + 高德瓦片子域</td><td>views/徒步路线.py</td><td>static/js/route_map.js</td><td>folium 迁 Leaflet，保留"子域必须是 1/2/3/4"这个坑的解法</td></tr><tr><td>高程剖面 Altair 面积图</td><td>views/徒步路线.py</td><td>static/js/profile.js</td><td>Altair 迁 ECharts，交互能力更强</td></tr><tr><td>城市热度加权公式</td><td>views/热度榜.py</td><td>services/stats.py</td><td>pandas 聚合改 SQL GROUP BY，权重外置到 config</td></tr><tr><td>norm_city() 字符串补丁</td><td>views/热度榜.py</td><td>region 维表</td><td>删除，改用 region_id 关联</td></tr><tr><td>gen_track() 示意轨迹</td><td>app_utils.py</td><td>—</td><td>删除。反推的折线不是实测航迹，不能进毕业设计</td></tr><tr><td>load_* + @st.cache_data</td><td>app_utils.py</td><td>—</td><td>删除，由数据库查询与连接池替代</td></tr><tr><td>safe_run() 全局异常兜底</td><td>app_utils.py</td><td>main.py 异常处理器</td><td>改 FastAPI exception_handler</td></tr><tr><td>read_csv_smart() 多编码探测</td><td>app_utils.py</td><td>scripts/import_seed.py</td><td>仅在导入脚本中使用</td></tr></tbody></table></div>
+<h3 class="h2" id="sec-8-4">（四）删除清单</h3>
+<p class="para">"完成后仅保留新项目"的具体落地。以下文件与目录不进交付物。</p>
+<p class="caption" id="tbl---8-3">表 8.3  删除与保留清单</p>
+<div class="table-wrap"><table><colgroup><col style="width:33%"><col style="width:33%"><col style="width:33%"></colgroup><thead><tr><th>对象</th><th>处理</th><th>说明</th></tr></thead><tbody><tr><td>_archive-early-vue/、web/</td><td>删除</td><td>含 Vue 3 + Vite，违反语言约束</td></tr><tr><td>Home.py、views/*.py（4 个）</td><td>删除</td><td>Streamlit 页面，逻辑迁入 api + services</td></tr><tr><td>app_utils.py、gpx_store.py</td><td>拆分后删除</td><td>有用函数迁 services/geo.py、gpx.py</td></tr><tr><td>tools/（9 个脚本）</td><td>移出交付</td><td>数据生产工具，非系统功能；方法写入论文"数据来源"</td></tr><tr><td>Dockerfile、start_local.bat、部署手册.md</td><td>重写</td><td>原为 Streamlit 专用</td></tr><tr><td>screenshots/（4 张）</td><td>删除</td><td>旧界面，验收后重截</td></tr><tr><td>requirements.txt</td><td>重写</td><td>Streamlit/leafmap/geopandas 全部移除，换 FastAPI/SQLAlchemy/PyMySQL</td></tr><tr><td>README.md</td><td>重写</td><td>改为新项目的运行与部署说明</td></tr><tr><td>轨迹体检报告.md</td><td>转为素材</td><td>内容并入论文"数据预处理"，不进项目根目录</td></tr><tr><td>data/*.csv、data/tracks/*.json</td><td>保留</td><td>作为种子数据，迁移后原样留档</td></tr><tr><td>LICENSE</td><td>保留</td><td>MIT，须保留原作者版权声明；另需注明 OSM（ODbL）与 SRTM 数据来源</td></tr></tbody></table></div>
+<h2 class="h1" id="chap-9"><span class="chap-no">09</span>九、数据库设计</h2>
+<h3 class="h2" id="sec-9-1">（一）设计原则</h3>
+<p class="bullet">字符集统一 utf8mb4、排序规则 utf8mb4_general_ci，存储引擎 InnoDB。中文地名与 emoji 都不会出问题。</p>
+<p class="bullet">主键统一用自增 BIGINT，命名 id；外键字段命名 xxx_id；时间字段统一 created_at / updated_at。</p>
+<p class="bullet">多对多关系（收藏、评价）不建中间表以外的冗余字段，靠唯一索引防重。</p>
+<p class="bullet">分类、地区这类会被反复引用的维度抽成字典表，不在业务表里存中文字符串。</p>
+<p class="bullet">表数量严格控制在 12 张，与任务书承诺一致；扩展需求优先在现有表加字段，而不是加表。</p>
+<h3 class="h2" id="sec-9-2">（二）E-R 关系</h3>
+<p class="para">整体是"用户—内容—互动"三段结构：user 是根，向左连接偏好与地区，中间是三类内容实体，右侧是 comment、favorite、route_review 三张互动表。具体关系如下。</p>
+<pre class="code"><code>region (省/市) 1 ──&lt; N attraction
+                       └──&lt; N hiking_route ──&lt; N route_waypoint
+                                     │
+category (字典) 1 ──&lt; N attraction   │
+                 └──&lt; N hiking_route │
+                                     │
+user 1 ──&lt; 1 user_preference          │
+  │  1 ──&lt; N roadbook ──&lt; N roadbook_day
+  │                    └──N──1 hiking_route
+  │  1 ──&lt; N favorite  &gt;──N── (attraction / hiking_route / roadbook)
+  │  1 ──&lt; N comment   &gt;──N── (roadbook)
+  └  1 ──&lt; N route_review ──N──1 hiking_route</code></pre>
+<h3 class="h2" id="sec-9-3">（三）12 张表清单</h3>
+<p class="caption" id="tbl---9-1">表 9.1  12 张数据表</p>
+<div class="table-wrap"><table><colgroup><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"></colgroup><thead><tr><th>序号</th><th>表名</th><th>中文名</th><th>主要作用</th><th>关键约束</th></tr></thead><tbody><tr><td>1</td><td>user</td><td>用户表</td><td>账号、密码哈希、角色、状态</td><td>username 唯一；role 0 用户 / 1 管理员</td></tr><tr><td>2</td><td>user_preference</td><td>用户偏好表</td><td>难度、里程上限、偏好季节、常驻城市</td><td>user_id 唯一（1:1）</td></tr><tr><td>3</td><td>region</td><td>地区表</td><td>省市两级，供景点与路线引用</td><td>province+city 唯一</td></tr><tr><td>4</td><td>category</td><td>分类字典表</td><td>景点类型、路线类型、难度三套字典</td><td>type+name 唯一</td></tr><tr><td>5</td><td>attraction</td><td>景点表</td><td>名称、等级、门票、季节、经纬度、热度</td><td>region_id、category_id 外键</td></tr><tr><td>6</td><td>hiking_route</td><td>路线表</td><td>里程、爬升、难度、季节、热度、轨迹文件</td><td>region_id 外键；含轨迹元数据</td></tr><tr><td>7</td><td>route_waypoint</td><td>途经点表</td><td>序号、名称、经纬度、海拔、累计里程</td><td>route_id+seq 唯一</td></tr><tr><td>8</td><td>roadbook</td><td>路书表</td><td>标题、日期、天数、交通、费用、装备、正文、审核状态</td><td>user_id、route_id 外键</td></tr><tr><td>9</td><td>roadbook_day</td><td>路书日程表</td><td>第几天、标题、内容、当日里程与爬升</td><td>roadbook_id+day_no 唯一</td></tr><tr><td>10</td><td>comment</td><td>评论表</td><td>路书下的评论，支持一级回复</td><td>target_type+target_id 多态</td></tr><tr><td>11</td><td>favorite</td><td>收藏表</td><td>收藏景点、路线、路书</td><td>user_id+target_type+target_id 唯一</td></tr><tr><td>12</td><td>route_review</td><td>路线评价表</td><td>四项评分 + 文字评价</td><td>user_id+route_id 唯一</td></tr></tbody></table></div>
+<h3 class="h2" id="sec-9-4">（四）核心表字段设计</h3>
+<h4 class="h3">1. user 与 user_preference</h4>
+<p class="caption" id="tbl---9-2">表 9.2  user 表结构</p>
+<div class="table-wrap"><table><colgroup><col style="width:33%"><col style="width:33%"><col style="width:33%"></colgroup><thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead><tbody><tr><td>id</td><td>BIGINT PK AUTO_INCREMENT</td><td>主键</td></tr><tr><td>username</td><td>VARCHAR(50) UNIQUE</td><td>登录名</td></tr><tr><td>password_hash</td><td>VARCHAR(255)</td><td>PBKDF2 加盐哈希，含算法、迭代次数、盐值</td></tr><tr><td>nickname / avatar / city</td><td>VARCHAR(50) / VARCHAR(255) / VARCHAR(50)</td><td>昵称、头像路径、常驻城市</td></tr><tr><td>bio</td><td>VARCHAR(255)</td><td>个人简介</td></tr><tr><td>role</td><td>TINYINT DEFAULT 0</td><td>0 注册用户 / 1 管理员</td></tr><tr><td>status</td><td>TINYINT DEFAULT 1</td><td>1 正常 / 0 禁用</td></tr><tr><td>created_at</td><td>DATETIME</td><td>注册时间</td></tr></tbody></table></div>
+<p class="caption" id="tbl---9-3">表 9.3  user_preference 表结构</p>
+<div class="table-wrap"><table><colgroup><col style="width:33%"><col style="width:33%"><col style="width:33%"></colgroup><thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead><tbody><tr><td>user_id</td><td>BIGINT PK</td><td>同时也是外键，保证 1:1</td></tr><tr><td>prefer_difficulty</td><td>TINYINT</td><td>偏好难度 1~5，对应入门~难</td></tr><tr><td>max_distance_km</td><td>DECIMAL(6,2)</td><td>可接受的单日里程上限</td></tr><tr><td>prefer_season</td><td>TINYINT</td><td>偏好季节 1~4；0 表示不限</td></tr><tr><td>prefer_region_id</td><td>BIGINT</td><td>常驻城市，可空</td></tr><tr><td>updated_at</td><td>DATETIME</td><td>偏好更新时间</td></tr></tbody></table></div>
+<h4 class="h3">2. hiking_route（含轨迹元数据）</h4>
+<p class="para">注意这张表把轨迹文件的元数据内联进来，而没有单独建轨迹表，理由见本节第五部分。</p>
+<p class="caption" id="tbl---9-4">表 9.4  hiking_route 表结构</p>
+<div class="table-wrap"><table><colgroup><col style="width:33%"><col style="width:33%"><col style="width:33%"></colgroup><thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead><tbody><tr><td>id</td><td>BIGINT PK</td><td>主键</td></tr><tr><td>name</td><td>VARCHAR(100)</td><td>路线名</td></tr><tr><td>region_id</td><td>BIGINT FK</td><td>所属城市</td></tr><tr><td>category_id</td><td>BIGINT FK</td><td>路线类型（山岳、海岸线…）</td></tr><tr><td>difficulty</td><td>TINYINT</td><td>1 入门 / 2 较易 / 3 中等 / 4 较难 / 5 难</td></tr><tr><td>distance_km / ascent_m / descent_m</td><td>DECIMAL(6,2) / INT / INT</td><td>里程、累计爬升、累计下降</td></tr><tr><td>ele_max / ele_min</td><td>INT</td><td>最高、最低海拔</td></tr><tr><td>naismith_hours</td><td>DECIMAL(4,1)</td><td>按 Naismith 规则预算的耗时</td></tr><tr><td>days</td><td>VARCHAR(10)</td><td>建议天数，如"1天""1-2天"</td></tr><tr><td>season_start / season_end</td><td>TINYINT</td><td>最佳季节的起止月，支持跨年（start &gt; end）</td></tr><tr><td>transport / supply / safety</td><td>TEXT</td><td>交通方式、补给建议、安全提示</td></tr><tr><td>track_file</td><td>VARCHAR(255)</td><td>轨迹 JSON 相对路径</td></tr><tr><td>n_points / n_waypoints</td><td>INT</td><td>轨迹点数、途经点数</td></tr><tr><td>heat / rating_avg / rating_count</td><td>TINYINT / DECIMAL(3,2) / INT</td><td>热度、加权均分、评价数</td></tr><tr><td>status</td><td>TINYINT DEFAULT 1</td><td>1 上架 / 0 下架</td></tr></tbody></table></div>
+<h4 class="h3">3. roadbook 与互动表</h4>
+<p class="caption" id="tbl---9-5">表 9.5  roadbook 表结构</p>
+<div class="table-wrap"><table><colgroup><col style="width:33%"><col style="width:33%"><col style="width:33%"></colgroup><thead><tr><th>字段</th><th>类型</th><th>说明</th></tr></thead><tbody><tr><td>id / user_id / route_id</td><td>BIGINT</td><td>主键、作者、关联路线（可空）</td></tr><tr><td>title</td><td>VARCHAR(120)</td><td>路书标题</td></tr><tr><td>travel_date</td><td>DATE</td><td>出行日期</td></tr><tr><td>days</td><td>TINYINT</td><td>行程天数</td></tr><tr><td>transport / cost / gear / notice</td><td>VARCHAR/TEXT</td><td>交通、费用参考、装备清单、注意事项</td></tr><tr><td>content</td><td>LONGTEXT</td><td>正文，纯文本或受限 HTML</td></tr><tr><td>cover</td><td>VARCHAR(255)</td><td>封面图路径</td></tr><tr><td>gpx_file</td><td>VARCHAR(255)</td><td>可选，上传的轨迹文件</td></tr><tr><td>status</td><td>TINYINT DEFAULT 0</td><td>0 待审 / 1 通过 / 2 驳回</td></tr><tr><td>reject_reason</td><td>VARCHAR(255)</td><td>驳回原因</td></tr><tr><td>views</td><td>INT DEFAULT 0</td><td>浏览量</td></tr></tbody></table></div>
+<p class="caption" id="tbl---9-6">表 9.6  comment、favorite、route_review 三张互动表</p>
+<div class="table-wrap"><table><colgroup><col style="width:33%"><col style="width:33%"><col style="width:33%"></colgroup><thead><tr><th>表</th><th>关键字段</th><th>约束与说明</th></tr></thead><tbody><tr><td>favorite</td><td>user_id, target_type(1 景点/2 路线/3 路书), target_id</td><td>UNIQUE(user_id, target_type, target_id)；取消收藏为物理删除</td></tr><tr><td>comment</td><td>user_id, target_type(固定为路书), target_id, content, parent_id, status</td><td>parent_id 为空是一级评论，非空是回复；status 支持管理员隐藏</td></tr><tr><td>route_review</td><td>user_id, route_id, score_scenery, score_difficulty, score_traffic, score_overall, content</td><td>UNIQUE(user_id, route_id)；四项各 1~5 分，整体分参与推荐</td></tr></tbody></table></div>
+<h3 class="h2" id="sec-9-5">（五）三个必须写进论文的设计权衡</h3>
+<h4 class="h3">1. 轨迹点为什么不入库</h4>
+<p class="para">34 条路线共 15,330 个坐标点。如果建 route_track_point 表逐点存储，全表约 1.5 万行、每行 6 个字段，看似不多，但会带来三个后果：一是每次看路线详情要拉取数百行做拼接，查询开销远高于读一个 JSON 文件；二是数据库备份体积膨胀、迁移变慢；三是没有任何"按单点查询"的业务需求。因此采用"元数据入库、几何数据留文件"的方案：hiking_route 存 track_file 路径与统计摘要，轨迹点保留原 JSON 结构。这也让 12 张表的承诺得以守住。论文里要把这个取舍写清楚，并说明触发条件——如果将来需要按空间范围检索轨迹，再拆出轨迹点表并用空间索引。</p>
+<h4 class="h3">2. 多态关联为什么不做外键</h4>
+<p class="para">comment 和 favorite 要同时指向景点、路线、路书三类对象。规范做法是拆成三张表，在 12 张表的约束下不可行；替代做法是 target_type + target_id 的多态关联。代价是数据库无法用外键保证引用完整性，被收藏的对象删除后会留下孤儿记录。解决办法是在服务层统一提供"清理钩子"：任何内容被删除时，同步删除对应的 favorite 与 comment。这是一个典型的"用应用层约束换表数量"的权衡，答辩时主动讲出来，比被问出来好。</p>
+<h4 class="h3">3. 地区为什么单独建表</h4>
+<p class="para">现有代码用 norm_city() 截字符串解决"深圳"与"深圳市大鹏新区"的匹配问题。这种补丁在数据量小的时候能跑，但一旦要做"按城市聚合统计""按城市推荐"就会到处漏。建 region 表后，景点和路线都只存 region_id，城市名归一只做一次（在导入脚本里），后续所有查询与统计都靠整数关联，既快又不会错。这是把"代码技巧"升级为"数据建模"的典型案例。</p>
+<h3 class="h2" id="sec-9-6">（六）索引设计</h3>
+<p class="caption" id="tbl---9-7">表 9.7  主要索引设计</p>
+<div class="table-wrap"><table><colgroup><col style="width:33%"><col style="width:33%"><col style="width:33%"></colgroup><thead><tr><th>表</th><th>索引</th><th>服务的查询</th></tr></thead><tbody><tr><td>attraction</td><td>idx_region(region_id)、idx_heat(heat DESC)、idx_cat(category_id)</td><td>按城市/类型筛选、按热度排序</td></tr><tr><td>hiking_route</td><td>idx_region_diff(region_id, difficulty)、idx_km(distance_km)、idx_heat(heat DESC)</td><td>三维筛选、里程区间、热门榜</td></tr><tr><td>route_waypoint</td><td>uk_route_seq(route_id, seq)</td><td>按路线取途经点并保序</td></tr><tr><td>roadbook</td><td>idx_status_time(status, created_at DESC)、idx_route(route_id)、idx_user(user_id)</td><td>前台只查 status=1、后台按状态筛、个人中心</td></tr><tr><td>favorite</td><td>uk_user_target(user_id, target_type, target_id)</td><td>防重复收藏 + 我的收藏</td></tr><tr><td>route_review</td><td>uk_user_route(user_id, route_id)、idx_route(route_id)</td><td>一人一条 + 聚合均分</td></tr><tr><td>comment</td><td>idx_target(target_type, target_id, created_at)</td><td>路书详情页评论列表</td></tr></tbody></table></div>
+<h3 class="h2" id="sec-9-7">（七）建表脚本片段</h3>
+<p class="para">完整脚本放 sql/schema.sql，这里给出路线表与收藏表两段，其余 10 张同风格。</p>
+<pre class="code"><code>CREATE TABLE hiking_route (
+  id             BIGINT       NOT NULL AUTO_INCREMENT,
+  name           VARCHAR(100) NOT NULL,
+  region_id      BIGINT       NOT NULL,
+  category_id    BIGINT       NOT NULL,
+  difficulty     TINYINT      NOT NULL DEFAULT 3 COMMENT '1入门 2较易 3中等 4较难 5难',
+  distance_km    DECIMAL(6,2) NOT NULL,
+  ascent_m       INT          NOT NULL DEFAULT 0,
+  descent_m      INT          NOT NULL DEFAULT 0,
+  ele_max        INT          NULL,
+  ele_min        INT          NULL,
+  naismith_hours DECIMAL(4,1) NULL,
+  days           VARCHAR(10)  NULL,
+  season_start   TINYINT      NULL COMMENT '起始月，可大于 end 表示跨年',
+  season_end     TINYINT      NULL,
+  transport      TEXT         NULL,
+  supply         TEXT         NULL,
+  safety         TEXT         NULL,
+  track_file     VARCHAR(255) NULL,
+  n_points       INT          NOT NULL DEFAULT 0,
+  n_waypoints    INT          NOT NULL DEFAULT 0,
+  heat           TINYINT      NOT NULL DEFAULT 0,
+  rating_avg     DECIMAL(3,2) NOT NULL DEFAULT 0.00,
+  rating_count   INT          NOT NULL DEFAULT 0,
+  status         TINYINT      NOT NULL DEFAULT 1,
+  created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_region_diff (region_id, difficulty),
+  KEY idx_km (distance_km),
+  KEY idx_heat (heat),
+  CONSTRAINT fk_route_region   FOREIGN KEY (region_id)   REFERENCES region(id),
+  CONSTRAINT fk_route_category FOREIGN KEY (category_id) REFERENCES category(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;</code></pre>
+<p class="para">收藏表用唯一索引防重复收藏，外键带级联删除，用户注销时收藏记录一并清理：</p>
+<pre class="code"><code>CREATE TABLE favorite (
+  id          BIGINT   NOT NULL AUTO_INCREMENT,
+  user_id     BIGINT   NOT NULL,
+  target_type TINYINT  NOT NULL COMMENT '1景点 2路线 3路书',
+  target_id   BIGINT   NOT NULL,
+  created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_user_target (user_id, target_type, target_id),
+  CONSTRAINT fk_fav_user FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;</code></pre>
+<h2 class="h1" id="chap-10"><span class="chap-no">10</span>十、路线推荐算法设计</h2>
+<p class="para">这是课题的题眼，也是现有项目与任务书差距最大的一块。现有代码只有一句 sort_values("heat", ascending=False)，这不叫推荐，叫排序。本章给出可直接实现的算法。</p>
+<h3 class="h2" id="sec-10-1">（一）两段式结构：先硬过滤，再加权打分</h3>
+<p class="para">把"不合适的"和"次优的"分开处理。第一步用硬条件把不可能的路线剔掉，第二步在剩余候选里打分排序。这样既能保证结果都可用，又能让打分公式专注于区分优劣。</p>
+<pre class="code"><code>候选集 = { r | r.status = 1
+             ∧ r.region_id ∈ 用户可选地区
+             ∧ r.distance_km ≤ 用户里程上限
+             ∧ 季节区间与出行月份有交集 }
+
+对候选集内每条路线 r：
+    Fit(r) = wD·D(r) + wL·L(r) + wS·S(r) + wR·R(r) + wH·H(r)
+按 Fit 降序取 Top10，为每条生成中文理由</code></pre>
+<h3 class="h2" id="sec-10-2">（二）五个因子的定义</h3>
+<p class="caption" id="tbl---10-1">表 10.1  推荐因子定义与计算方式</p>
+<div class="table-wrap"><table><colgroup><col style="width:25%"><col style="width:25%"><col style="width:25%"><col style="width:25%"></colgroup><thead><tr><th>因子</th><th>含义</th><th>取值范围</th><th>计算方式</th></tr></thead><tbody><tr><td>D 难度匹配</td><td>路线难度与用户偏好难度的接近程度</td><td>0~1</td><td>D = 1 − |difficulty − prefer| / 4。偏好为"不限"时统一取 0.8，避免压制</td></tr><tr><td>L 里程匹配</td><td>路线里程在用户可接受范围内的利用度</td><td>0~1</td><td>L = min(distance_km, max_km) / max_km。太短扣分，超限已在硬过滤阶段剔除</td></tr><tr><td>S 季节匹配</td><td>出行月份是否落在最佳季节内</td><td>0~1</td><td>命中区间取 1.0；相差 1 个月取 0.6；相差 2 个月取 0.3；其余 0.1；"全年"取 0.9。跨年区间（start &gt; end）用环形判断：m ≥ start ∨ m ≤ end</td></tr><tr><td>R 评分质量</td><td>其他用户对该路线的评价水平</td><td>0~1</td><td>贝叶斯平滑后除以 5，见下文公式</td></tr><tr><td>H 热度</td><td>路线受关注程度</td><td>0~1</td><td>H = heat / 100，直接用现有字段</td></tr></tbody></table></div>
+<h3 class="h2" id="sec-10-3">（三）评分要平滑，否则新路线永远排不上</h3>
+<p class="para">直接用 rating_avg 会出问题：一条只有 1 个 5 分评价的新路线，均分 5.0，会压过有 50 个评价、均分 4.6 的老路线。解决办法是贝叶斯平均（与 IMDb 的电影排名同一思路），把评价数少的对象向全局均值收缩：</p>
+<pre class="code"><code>R_smooth = (v / (v + m)) · R_avg  +  (m / (v + m)) · C
+
+  v = 该路线的评价数 (rating_count)
+  R_avg = 该路线的算术均分
+  C = 全站所有路线的评价均值（初始化时取 4.0）
+  m = 平滑强度常数，取 5（相当于"先给它 5 个均分评价"作为先验）</code></pre>
+<p class="para">效果：评价数 0 时 R_smooth 等于全局均值，不会被埋没也不会虚高；评价数到 20 条以上时基本等于真实均分。这个公式解释起来简单，实现只有三行，但能明显体现"想过边界情况"，是论文里值得单独写一段的点。</p>
+<h3 class="h2" id="sec-10-4">（四）权重与理由生成</h3>
+<p class="caption" id="tbl---10-2">表 10.2  权重取值与来由</p>
+<div class="table-wrap"><table><colgroup><col style="width:33%"><col style="width:33%"><col style="width:33%"></colgroup><thead><tr><th>因子</th><th>权重</th><th>取值理由</th></tr></thead><tbody><tr><td>D 难度</td><td>0.25</td><td>难度不匹配是户外最大的体验风险，权重最高</td></tr><tr><td>L 里程</td><td>0.20</td><td>体力与时间的硬约束，但已在过滤阶段起作用，故不最高</td></tr><tr><td>S 季节</td><td>0.20</td><td>华南山区季节差异极大（草甸封山、海岸线台风），必须重视</td></tr><tr><td>R 评分</td><td>0.20</td><td>他人经验是可信度最高的信号，但样本少，与季节同权</td></tr><tr><td>H 热度</td><td>0.15</td><td>热度是外部指标，容易与真实质量脱节，权重最低</td></tr></tbody></table></div>
+<p class="note">五个权重之和为 1，写在 config.py 里可调。论文里要说明这是经验取值，并给出一次权重敏感性实验：固定其他条件，只改某一权重，观察 Top10 的变化，用表格呈现。这是让"规则推荐"看起来有实验支撑的最省力办法。</p>
+<p class="para">推荐理由不写"匹配度 87 分"这种机器语言，而是取贡献最大的两个因子拼成一句话。规则如下：</p>
+<pre class="code"><code>按 w_i·F_i 排序，取贡献最高的两个因子，套模板：
+
+  D 最大 → "你偏好{难度}难度，这条正好是{difficulty}"
+  L 最大 → "全程{distance}公里，在你设定的{max_km}公里以内"
+  S 最大 → "{month}月正合适，最佳季节是{season}"
+  R 最大 → "{count}位用户平均打了{avg}分"
+  H 最大 → "近期热度{heat}，是本区域的热门线路"
+
+输出示例：
+  "你偏好中等难度，这条正好是中等；全程 8.6 公里，在你设定的 10 公里以内。"
+  "5 月正合适，最佳季节是 4-11 月；12 位用户平均打了 4.6 分。"</code></pre>
+<p class="para">这样做的好处是：用户知道"为什么推荐给我"，评委也能顺着理由反推算法是否正确。比单纯给一个分数要有说服力得多，这也是"S1 推荐理由生成"作为特色功能的支撑点。</p>
+<h3 class="h2" id="sec-10-5">（五）游客怎么办</h3>
+<p class="para">未登录用户没有偏好数据。三种处理方式里，选第三种：一是直接不给推荐（体验差）；二是要求先登录（掉转化）；三是用一组默认偏好兜底——难度取"中等"、里程上限 15 km、季节取当前月份，并在页面顶部提示"这是通用推荐，登录后可按你的偏好调整"。这个细节体现了对未登录场景的考虑，写进论文不占篇幅但有效。</p>
+<h3 class="h2" id="sec-10-6">（六）可测试性</h3>
+<p class="para">算法要能被单测，就得把打分函数写成纯函数：输入一条路线对象和一组偏好，输出分数与理由，不碰数据库。这样 tests/test_recommend.py 可以构造边界用例：难度完全一致时 D=1；里程超限已在候选集外；跨年季节 10-5 月在 12 月能命中；评价数为 0 时 R 等于全局均值。四个用例覆盖了最容易出错的地方，也正好是测试章节的素材。</p>
+<h2 class="h1" id="chap-11"><span class="chap-no">11</span>十一、数据迁移方案</h2>
+<h3 class="h2" id="sec-11-1">（一）字段映射</h3>
+<p class="para">迁移脚本 scripts/import_seed.py 一次性执行，要求幂等（重复执行不产生重复数据，用 name+region_id 做 upsert 键）。</p>
+<p class="caption" id="tbl---11-1">表 11.1  景点表字段映射</p>
+<div class="table-wrap"><table><colgroup><col style="width:33%"><col style="width:33%"><col style="width:33%"></colgroup><thead><tr><th>现有 CSV 字段</th><th>目标表.字段</th><th>处理</th></tr></thead><tbody><tr><td>name</td><td>attraction.name</td><td>直接映射</td></tr><tr><td>province + city + district</td><td>attraction.region_id</td><td>查 region 表得到 id；region 由 CSV 去重生成</td></tr><tr><td>type</td><td>attraction.category_id</td><td>归一后查 category 表；现有 8+ 种取值可直接用</td></tr><tr><td>level</td><td>attraction.level</td><td>"无"转为 NULL；5A/4A/3A 存字符串</td></tr><tr><td>ticket</td><td>attraction.ticket</td><td>转 DECIMAL；免费填 0</td></tr><tr><td>recommend_hours</td><td>attraction.suggest_hours</td><td>转 DECIMAL(3,1)</td></tr><tr><td>best_season</td><td>attraction.season_text</td><td>原文保留；另解析 season_start/end 供匹配</td></tr><tr><td>highlight</td><td>attraction.intro</td><td>直接作为简介</td></tr><tr><td>lon / lat</td><td>attraction.lng / lat</td><td>DECIMAL(10,6)</td></tr><tr><td>heat</td><td>attraction.heat</td><td>直接映射</td></tr><tr><td>—</td><td>attraction.address、open_time、tips、cover</td><td>缺口字段，前 20 条手工补全，其余留空</td></tr></tbody></table></div>
+<p class="caption" id="tbl---11-2">表 11.2  路线表字段映射</p>
+<div class="table-wrap"><table><colgroup><col style="width:33%"><col style="width:33%"><col style="width:33%"></colgroup><thead><tr><th>现有 CSV / JSON 字段</th><th>目标表.字段</th><th>处理</th></tr></thead><tbody><tr><td>name、distance_km、ascent_m、ele_max、heat、difficulty、days、best_season</td><td>hiking_route 同名列</td><td>difficulty 中文转 1~5；best_season 解析为 start/end 两个月</td></tr><tr><td>type</td><td>category_id</td><td>必须归一：丹霞→丹霞地貌、田园→乡村田园、花岗岩→花岗岩峰林</td></tr><tr><td>desc</td><td>hiking_route.description</td><td>直接映射</td></tr><tr><td>tracks/*.json 的 stats.descent_m、ele_min</td><td>hiking_route.descent_m、ele_min</td><td>从 JSON 读取回填，无需手工</td></tr><tr><td>n_points、n_waypoints</td><td>同名列</td><td>直接映射</td></tr><tr><td>track_id</td><td>track_file</td><td>拼成 data/tracks/{track_id}.json</td></tr><tr><td>JSON 的 waypoints[]</td><td>route_waypoint</td><td>循环插入，seq 从 1 开始；名称、经纬度、海拔、累计里程</td></tr><tr><td>—</td><td>transport、supply、safety</td><td>缺口字段，前 20 条补全</td></tr><tr><td>—</td><td>naismith_hours</td><td>迁移时用 distance/4.5 + ascent/600 计算写入</td></tr><tr><td>—</td><td>rating_avg、rating_count</td><td>初始化为 0，等真实评价产生</td></tr></tbody></table></div>
+<h3 class="h2" id="sec-11-2">（二）分类归一的对照表</h3>
+<p class="para">路线 type 的 25 种取值建议归为 6 类，景点 type 的 8 类直接沿用。这张对照表放论文附录，说明数据清洗过程。</p>
+<p class="caption" id="tbl---11-3">表 11.3  路线分类归一对照表</p>
+<div class="table-wrap"><table><colgroup><col style="width:33%"><col style="width:33%"><col style="width:33%"></colgroup><thead><tr><th>原取值</th><th>归一后</th><th>涉及条数</th></tr></thead><tbody><tr><td>山岳、山岳古道、山岳森林、山岳温泉、山岳海岸、城市山岳、花岗岩、花岗岩峰林</td><td>山岳山地</td><td>约 15 条</td></tr><tr><td>丹霞、丹霞地貌、丹霞道教、喀斯特、地质海岸</td><td>地质地貌</td><td>约 6 条</td></tr><tr><td>海岸线、海岛海滨</td><td>海岸海岛</td><td>2 条</td></tr><tr><td>江河田园、田园、乡村田园、梯田村寨</td><td>江河田园</td><td>约 4 条</td></tr><tr><td>城市徒步、城市地标、街区古镇</td><td>城市徒步</td><td>约 3 条</td></tr><tr><td>高山草甸、原始森林、红色山林、山岳瀑布、山岳栈道</td><td>按原义保留或并入山岳山地</td><td>约 8 条</td></tr></tbody></table></div>
+<h3 class="h2" id="sec-11-3">（三）迁移后的校验</h3>
+<p class="bullet">数量校验：景点 155 条、路线 34 条、途经点 123 个，与源数据一致。</p>
+<p class="bullet">数值校验：随机抽 5 条路线，比对数据库的 distance_km / ascent_m 与 CSV 是否一致。</p>
+<p class="bullet">轨迹校验：抽衡山一条（12.64 km / 爬升 1208 m），用 services/geo.py 重算，误差应在 1% 内。这条在现有 README 里已有记录，可作为回归基准。</p>
+<p class="bullet">地区校验：46 个城市全部有 region 记录，景点与路线无孤儿 region_id。</p>
+<p class="bullet">季节校验：34 条路线的 season_start/end 均非空，跨年区间（如"10-5月"）被正确标记。</p>
+<h2 class="h1" id="chap-12"><span class="chap-no">12</span>十二、说明书章节映射</h2>
+<p class="para">学校模板要求六部分、三级标题、图 3.2 与表 3.1 的分章编号、8 千字。按这个骨架重组内容，现成的素材可以全部用上，不用重写。</p>
+<p class="caption" id="tbl---12-1">表 12.1  章节结构与素材来源</p>
+<div class="table-wrap"><table><colgroup><col style="width:25%"><col style="width:25%"><col style="width:25%"><col style="width:25%"></colgroup><thead><tr><th>章节</th><th>二级标题</th><th>字数</th><th>素材来源</th></tr></thead><tbody><tr><td>一、项目概况</td><td>（一）设计背景（二）设计意义（三）设计思路</td><td>1,200</td><td>原方案文档第一章；补充华南徒步资源分布与现有平台的不足</td></tr><tr><td>二、需求分析</td><td>（一）需求描述（二）角色分析（三）功能需求（四）可行性分析</td><td>1,600</td><td>原方案文档第二、三章；改用用例图与用例描述，去掉条目式罗列</td></tr><tr><td>三、系统设计</td><td>（一）总体架构（二）功能结构（三）业务流程（四）模块划分</td><td>1,400</td><td>本方案第五、六、七、八章，配四层架构图与功能结构图</td></tr><tr><td>四、数据库设计</td><td>（一）E-R 图（二）表结构设计（三）索引与约束（四）设计权衡</td><td>1,400</td><td>本方案第九章，12 张表全部列出，三个权衡各写一段</td></tr><tr><td>五、系统实现</td><td>（一）开发环境（二）关键功能实现（三）界面展示</td><td>1,600</td><td>推荐算法（第十章）、轨迹渲染、路书审核；配 8~10 张界面截图</td></tr><tr><td>六、系统测试</td><td>（一）测试环境（二）功能测试（三）权限测试（四）结果分析</td><td>1,000</td><td>表 6.2 的八条验收标准直接转成测试用例表</td></tr><tr><td>七、总结</td><td>（一）完成情况（二）不足与改进</td><td>600</td><td>如实写轨迹精度限制、多态关联的取舍</td></tr></tbody></table></div>
+<h3 class="h2" id="sec-12-1">写作时容易踩的四个坑</h3>
+<p class="bullet">图表编号必须分章。第三章第 2 张图是"图 3.2"，不是"图 2"。全文图表数量建议控制在 12 图 10 表，刚好够撑起 8 千字又不至于堆砌。</p>
+<p class="bullet">标题写"参考资料"不写"参考文献"，这是学校规范的明确要求；文献选近三年，按正文引用顺序编号，中文文献与英文文献格式不同，要分开核对。</p>
+<p class="bullet">每个一级标题另起一页。这条容易被忽略，打印出来会明显不合规。</p>
+<p class="bullet">页眉是毕业设计题目，五号宋体居中带下划线；目录用罗马数字，正文从 1 重新开始。Word 里要用"分节符"而不是"分页符"，否则页码会连着走。</p>
+<h2 class="h1" id="chap-13"><span class="chap-no">13</span>十三、实施计划</h2>
+<p class="para">对齐任务书的六个阶段，把工作拆到可执行粒度。关键判断是：框架搭建与数据库必须在前三周完成，因为后面所有功能都挂在上面；推荐算法放在中期做，因为它依赖真实评价数据，太早做没法验证。</p>
+<p class="caption" id="tbl---13-1">表 13.1  实施计划</p>
+<div class="table-wrap"><table><colgroup><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:20%"></colgroup><thead><tr><th>阶段</th><th>时间</th><th>任务</th><th>交付物</th><th>风险点</th></tr></thead><tbody><tr><td>一</td><td>2026.12.01—12.20</td><td>需求确认、技术选型定稿、修改任务书表述、搭建 FastAPI 骨架</td><td>任务书定稿、需求清单、可启动的空项目</td><td>任务书技术栈表述不改，后面全部要返工</td></tr><tr><td>二</td><td>2026.12.21—2027.01.15</td><td>12 张表设计、E-R 图、建表脚本、迁移脚本、数据入库</td><td>schema.sql、seed.sql、import_seed.py、入库校验报告</td><td>季节解析与分类归一最耗时，别低估</td></tr><tr><td>三</td><td>2027.01.16—03.20</td><td>用户体系 → 景点 → 路线 → 推荐 → 路书 → 收藏评价 → 个人中心 → 后台</td><td>可运行的主要功能</td><td>页面模板工作量大，注意复用 base 与 macro</td></tr><tr><td>四</td><td>2027.03.21—04.15</td><td>接口测试、权限测试、边界测试、部署上线、缺陷修复</td><td>测试用例与执行记录、云端可访问地址</td><td>部署环境与本地差异（编码、时区、静态路径）</td></tr><tr><td>五</td><td>2027.04.16—05.10</td><td>说明书初稿、图表制作、截图整理</td><td>说明书初稿（8 千字以上）</td><td>图表编号与正文引用对不上</td></tr><tr><td>六</td><td>2027.05.11—05.31</td><td>修改定稿、答辩 PPT、演示录屏、演示数据准备</td><td>定稿、PPT、录屏</td><td>演示数据太少会显得空，需提前造 20 条路书</td></tr></tbody></table></div>
+<h3 class="h2" id="sec-13-1">排期上的三个提醒</h3>
+<p class="bullet">第三阶段横跨两个月，是唯一可能失控的阶段。建议每完成一个模块就截一次图存档，既是为论文准备素材，也是进度可视化的手段。</p>
+<p class="bullet">路书审核流程看似简单，但有"本人可编辑已发布内容""驳回后可重新提交""管理员可下架"三个分支，状态机要一次画清楚，否则后期改起来牵一发动全身。</p>
+<p class="bullet">演示数据必须提前准备。34 条路线、155 个景点是现成的，但路书、评价、收藏这三类数据是零，答辩时页面上空空如也很难看。建议在第四阶段安排一天专门造数据：20 条路书、60 条评价、100 条收藏。</p>
+<h2 class="h1" id="chap-14"><span class="chap-no">14</span>十四、交付物清单</h2>
+<p class="para">按任务书"预期成果"逐项对应，确保不缺项。</p>
+<p class="caption" id="tbl---14-1">表 14.1  交付物与对应要求</p>
+<div class="table-wrap"><table><colgroup><col style="width:33%"><col style="width:33%"><col style="width:33%"></colgroup><thead><tr><th>交付物</th><th>形式</th><th>对应要求</th></tr></thead><tbody><tr><td>项目源代码</td><td>Git 仓库，含 app/、data/、sql/、scripts/、tests/</td><td>任务书"交付源代码"</td></tr><tr><td>建表与初始化脚本</td><td>sql/schema.sql（12 张表）、sql/seed.sql、scripts/import_seed.py</td><td>任务书"MySQL 建表与初始化数据脚本"</td></tr><tr><td>部署说明文档</td><td>README.md + 部署手册.md（Gunicorn + Nginx + systemd）</td><td>任务书"部署说明文档"</td></tr><tr><td>接口文档</td><td>/docs 导出的 OpenAPI JSON + 一份中文说明</td><td>任务书"接口文档"</td></tr><tr><td>接口测试用例及执行记录</td><td>tests/ 下的 pytest 用例 + 执行结果截图/报告</td><td>任务书"接口测试用例及执行记录"</td></tr><tr><td>毕业设计说明书</td><td>按学校模板排版，8 千字以上</td><td>任务书"说明书一份"</td></tr><tr><td>演示录屏</td><td>5~8 分钟，覆盖登录、筛选、推荐、发路书、审核、统计</td><td>任务书"系统演示录屏"</td></tr><tr><td>答辩 PPT</td><td>15~20 页</td><td>任务书"答辩 PPT"</td></tr><tr><td>数据来源说明</td><td>OSM（ODbL）、SRTM、高德瓦片授权说明</td><td>学术规范，主动声明</td></tr></tbody></table></div>
+<p class="para">另外建议单独准备一份《项目自检表》，把表 6.2 的八条验收标准逐条打勾，答辩前过一遍，比临时翻代码可靠。</p>
+<h2 class="h1" id="chap-15"><span class="chap-no">15</span>十五、需要你确认的三件事</h2>
+<p class="para">方案里有三处是"我认为该这样"，但最终要你或指导老师拍板。</p>
+<h4 class="h3">1. 技术栈从 Streamlit 改为 Jinja2 模板，任务书要跟着改</h4>
+<p class="para">这是影响最大的一处。如果你倾向于保留 Streamlit（比如已经比较熟），那必须接受两个后果：一是做不出带权限的后台，二是交不出"接口文档与接口测试用例"。如果指导老师对这两项不较真，Streamlit 方案能省下大量页面工作；如果较真，就必须换。我的判断是换，因为任务书写得很明确。</p>
+<h4 class="h3">2. 12 张表是否必须严格等于 12</h4>
+<p class="para">本方案设计成恰好 12 张，是为了对上任务书的承诺。如果你在实际开发中发现确实需要第 13 张（比如操作日志表），有两个处理方式：一是在说明书里写"12 张核心表 + 1 张日志表"，并说明日志表不属于业务模型；二是把日志写文件而不入库。前者更规范，后者更省事。</p>
+<h4 class="h3">3. 数据缺口补到什么程度</h4>
+<p class="para">景点缺地址、开放时间、游览提示、封面图；路线缺交通、补给、安全提示。全部 155 条补全大约需要 3~4 天。建议只补热度前 20 条，其余留空并在前台做兜底显示。如果你希望页面看起来更完整，可以只补"安全提示"这一类——它对徒步场景最有价值，也最能体现专业性。</p>
+<p class="center">（本方案共十五章，含 32 张表、6 段代码示例，可直接作为说明书第三、四、五章的写作底稿）</p>
+</main>
+</div>
+<button id="top" title="回到顶部">↑</button>
+<script>
+const prog=document.getElementById('prog'),top_=document.getElementById('top');
+window.addEventListener('scroll',()=>{
+  const h=document.documentElement;
+  prog.style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+'%';
+  top_.classList.toggle('show',h.scrollTop>600);
+},{passive:true});
+top_.addEventListener('click',()=>window.scrollTo({top:0,behavior:'smooth'}));
+
+const secs=[...document.querySelectorAll('.h2')],links=[...document.querySelectorAll('.nav-sec')];
+const io=new IntersectionObserver(es=>{
+  es.forEach(e=>{
+    if(e.isIntersecting){
+      links.forEach(l=>l.classList.toggle('active',l.getAttribute('href')==='#'+e.target.id));
+    }
+  });
+},{rootMargin:'-12% 0px -78% 0px'});
+secs.forEach(s=>io.observe(s));
+</script>
+</body>
+</html>
