@@ -66,14 +66,13 @@ outdoor-hiking-platform/
 │   ├── custom_routes.csv       # 用户自建路线样例
 │   └── tracks/                 # 34 个轨迹 JSON，合计 15,330 个坐标点
 ├── docs/
+│   ├── index.html              # 方案文档网页版（GitHub Pages 首页）
 │   ├── 整合优化方案.docx        # 完整方案（35 页，含逐项匹配度分析）
 │   └── 轨迹体检报告.md          # 旧项目数据质量记录
 ├── legacy/                     # 旧项目代码存档：仅作算法参考，不参与运行
 │   ├── app_utils.py            # 可复用的几何/地形计算
 │   ├── gpx_store.py            # GPX 解析与存储
 │   └── tools/                  # 数据流水线脚本（OSM 路网 + SRTM 高程）
-├── site/
-│   └── index.html              # 方案文档网页版（GitHub Pages 首页）
 └── requirements.txt
 ```
 
